@@ -2656,7 +2656,7 @@ load_font(int pointsize)
    }
 
 #ifdef X11
-   #define NUM_FONT_TYPES 2
+   #define NUM_FONT_TYPES 3
    char fontname[NUM_FONT_TYPES][BUFSIZE];
    int ifont;
    bool success = false;
@@ -2664,10 +2664,9 @@ load_font(int pointsize)
    /* Use proper point-size medium-weight upright helvetica font */
    // Exists on most X11 systems.
    // Backup font:  lucidasans, in the new naming style.
-   sprintf(fontname[0],"-*-helvetica-medium-r-*--*-%d0-*-*-*-*-*-*",
-             pointsize);
+   sprintf(fontname[0],"-*-helvetica-medium-r-*--*-%d0-*-*-*-*-*-*", pointsize);
    sprintf(fontname[1], "lucidasans-%d", pointsize);
-	
+   strcpy(fontname[2], "-bitstream-courier 10 pitch-medium-i-normal--0-0-0-0-m-0-ascii-0");	
 
 	
    for (ifont = 0; ifont < NUM_FONT_TYPES; ifont++) {
