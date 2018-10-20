@@ -94,20 +94,34 @@ int main(int argc, char * argv[]) {
 	Utils * ut = new Utils(net);
 	ut->get_configuration(argv[1]);
 
-	for(int i=0; i<net.netsAmount(); i++){
-		vector<int> current = net.getNextNet(i);
-		for(int j=0; j<current.size(); j++){
-			cout << current[j] << " ";
-		}
-		cout << endl;
-	}
-	for(int i=0; i<net.fixedAmount(); i++){
-		vector<float> current = net.getFixedObject(i);
-		for(int j=0; j<current.size(); j++){
-			cout << current[j] << " ";
-		}
-		cout << endl;
-	}
+	// for(int i=0; i<net.netsAmount(); i++){
+	// 	vector<int> current = net.getNextNet(i);
+	// 	for(int j=0; j<current.size(); j++){
+	// 		cout << current[j] << " ";
+	// 	}
+	// 	cout << endl;
+	// }
+	// for(int i=0; i<net.fixedAmount(); i++){
+	// 	vector<float> current = net.getFixedObject(i);
+	// 	for(int j=0; j<current.size(); j++){
+	// 		cout << current[j] << " ";
+	// 	}
+	// 	cout << endl;
+	// }
+
+	int maxnet = net.getMaxNet();
+	cout << endl << "The Largest Net is: " << maxnet;
 	cout << endl;
+
+	net.establishNetlist();
+	net.outputNBB();
+	
+	vector<int> vec2pass = net.getNetSet(7);
+	Clique C(vec2pass);
+	C.printVerticies();
+	C.createEdges();
+	C.outputEdges();
+
+
 	return 0;
 }
