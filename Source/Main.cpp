@@ -94,7 +94,7 @@ int main(int argc, char * argv[]) {
 	Utils * ut = new Utils(net);
 	ut->get_configuration(argv[1]);
 
-	// for(int i=0; i<net.netsAmount(); i++){
+	// for(int i=0; i<net.blocksAmount(); i++){
 	// 	vector<int> current = net.getNextNet(i);
 	// 	for(int j=0; j<current.size(); j++){
 	// 		cout << current[j] << " ";
@@ -108,19 +108,21 @@ int main(int argc, char * argv[]) {
 	// 	}
 	// 	cout << endl;
 	// }
+	// cout << "The amount of blocks are: " << net.blocksAmount() << endl;
 
-	int maxnet = net.getMaxNet();
-	cout << endl << "The Largest Net is: " << maxnet;
-	cout << endl;
+	// int maxnet = net.getMaxNet();
+	// cout << endl << "The Largest Net is: " << maxnet;
+	// cout << endl;
 
 	net.establishNetlist();
-	net.outputNBB();
-	
-	vector<int> vec2pass = net.getNetSet(7);
-	Clique C(vec2pass);
-	C.printVerticies();
-	C.createEdges();
-	C.outputEdges();
+	//net.outputNBB();
+	net.createClique();
+	float val;
+	for(int i=0; i<20; i++){
+		val = net.setMatrixDiagonal(i+1);
+		cout <<"Value " << i+1 <<": " << val << endl;
+	}
+	net.defineMatrix();
 
 
 	return 0;

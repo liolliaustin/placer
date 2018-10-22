@@ -8,28 +8,24 @@ private:
 	vector<vector<int> > netsFile;
 	int maxnet = 0; 
 	vector<vector<int> > netsBtwnBlocks;
+	int block_ID;
+	vector<float> edgeWeights;
+	vector<int> edgeNum;
+	vector<int> p;
+	vector<int> verticies;
+	vector<vector<float> >  Q;
 
 public:
 	float fixedX, fixedY, fixedBlockNum;
 
+//Fixed Block Definitions
 	void addFixedObject(vector<float> next){fixed.push_back(next);}
-
-	void outputNBB(){
-		for(int i=1; i<maxnet+1; i++){
-			cout << "Net " << i << ": ";
-			for(int j=0; j<netsBtwnBlocks[i].size(); j++){
-				cout << netsBtwnBlocks[i][j] << " ";
-			}
-			cout << endl;
-		}
-	}
-	
 	int fixedAmount(){return fixed.size();}
-	
 	vector<float> getFixedObject(int x){
 		return fixed[x];
 	}
 
+//Block_ID with nets its attached to
 	void addNet(vector<int> add){
 		for (int i=0; i<add.size(); i++){
 			if (add[i] > maxnet)
@@ -39,12 +35,30 @@ public:
 	}
 
 	int getMaxNet(){return maxnet;}
-	int netsAmount(){return netsFile.size();}
+	int blocksAmount(){return netsFile.size();}
 	
 	vector<int> getNextNet(int x){return netsFile[x];}
 
+//Each net with all blocks it contains
 	void establishNetlist();
-	vector<int> getNetSet(int x){return netsBtwnBlocks[x];}
+
+	void outputNBB(){
+		for(int i=1; i<maxnet+1; i++){
+			// cout << "Net " << i << ": ";
+			// for(int j=0; j<netsBtwnBlocks[i].size(); j++){
+			// 	//cout << netsBtwnBlocks[i][j] << " ";
+			// }
+			cout << endl << "The Size is: " << netsBtwnBlocks[i].size() << endl;
+		}
+	}
+	vector<vector<int> > getNetSet(){return netsBtwnBlocks;}
+
+//work with clique model
+	void createClique();
+	void createEdges(int iteration, vector<int>& verticies);
+	float setMatrixDiagonal(int block_ID);
+	void outputEdges(int iteration, vector<vector<int> >& Edges);
+	void defineMatrix();
 
 };
 
@@ -68,41 +82,41 @@ void Objects::establishNetlist(){
 
 }
 
-class Clique{
-private:
-	int block_ID, edgeWeight, p, edgeNum;
-	vector<int> verticies;
-	vector<vector<int> > Edges;
+void Objects::createClique(){
+	vector<float> edgeWeights;
+	vector<int> edgeNum;
+	vector<int> p;
+	for(int i=1; i<netsBtwnBlocks.size(); i++){
+		float current = netsBtwnBlocks[i].size();
+		p.push_back(current);
+		edgeNum.push_back((current*(current - 1))/2);
+		edgeWeights.push_back(2/current);
+	}
+	
+	this -> p = p;
+	this -> edgeNum = edgeNum;
+	this -> edgeWeights = edgeWeights;
 
-public:
-	Clique(vector<int>& netIn){
-		p=netIn.size();
-		edgeNum = (p*(p-1))/2;
-		edgeWeight= (2/p);
-		this -> verticies = netIn;
-		vector<vector<int> > Edges(edgeNum, vector<int>());
-		this -> Edges = Edges;
+	for(int i=0; i<p.size(); i++){
+		createEdges(i, netsBtwnBlocks[i+1]);
 	}
 
-	void printVerticies(){
-		cout << "Verticies: ";
-		for(int i=0; i<verticies.size(); i++){
-			cout << verticies[i] << " ";
-		}
-		cout << endl;
-	}
-
-	void createEdges();
-	void outputEdges();
-
-
-};
-
+}
 //somehow recursively create edges for given list of blocks attached to net
-void Clique::createEdges(){
+void Objects::createEdges(int iteration, vector<int>& verticies){
 	int location = 0;
 	int connected = 1;
-	for(int i=0; i<edgeNum; i++){
+	// cout << "verticies: ";
+	// for(int i=0; i<verticies.size(); i++){
+	// 	cout << verticies[i] << " ";
+	// }
+	// cout << endl;
+
+	// cout << "Number of Edges: " << edgeNum[iteration] << endl;
+	// cout << "Number of verticies: " << p[iteration] << endl;
+	// cout << "Edge Weight: " << edgeWeights[iteration] << endl;
+	vector<vector<int> > Edges(edgeNum[iteration], vector<int>());
+	for(int i=0; i<edgeNum[iteration]; i++){
 		Edges[i].push_back(verticies[location]);
 		Edges[i].push_back(verticies[connected]);
 		if(connected == verticies.size() - 1){
@@ -113,10 +127,13 @@ void Clique::createEdges(){
 			connected++;
 		
 	}
+	
+	//outputEdges(iteration, Edges);
+	Edges.clear();
 }
 
-void Clique::outputEdges(){
-	for(int i=0; i<edgeNum; i++){
+void Objects::outputEdges(int iteration, vector<vector<int> >& Edges){
+	for(int i=0; i<edgeNum[iteration]; i++){
 		int current = Edges[i].size();
 		cout << "Edge " << i << ": ";
 		for(int j=0; j<current; j++){
@@ -124,30 +141,102 @@ void Clique::outputEdges(){
 		}
 		cout << endl;
 	}
+	cout << endl << endl;
 }
 
-
-struct Edges{
-	int *p1, *p2;
-	Edges(int edgeWeight){
-
-		
+float Objects::setMatrixDiagonal(int block_ID){
+	vector<int> netsToCheck;
+	for(int i=2; i<netsFile[block_ID-1].size(); i++){
+		netsToCheck.push_back(netsFile[block_ID-1][i]);
 	}
-};
+	// for(int i=0; i<netsToCheck.size(); i++){
+	// 	cout << netsToCheck[i] << " ";
+	// }
+	// cout << endl;
+	float matrixValue=0;
 
+	for(int i=0; i<netsToCheck.size(); i++){
+		matrixValue += edgeWeights[netsToCheck[i]];
+	}
+	return matrixValue;
+}
 
+void Objects::defineMatrix(){
+	vector<vector<float> > Q(netsFile.size(), vector<float>(netsFile.size(), 0));
+	this -> Q = Q;
+	float value;
 
+	for(int i=0; i<Q.size(); i++){
+		value = setMatrixDiagonal(i+1);
+		Q[i][i] = value;
+	}
 
+	for(int i=0; i<Q.size(); i++){
+		for(int j=0; j<Q.size(); j++){
+			cout << Q[i][j] << " ";
+		}
+		cout << endl;
+	}
+}
 
+// class QMatrix{
+// private:
+// 	int size;
+// 	vector<vector<float> >  Q;
+// public:
+// 	QMatrix(int size){
+// 		this -> size = size;
+// 		vector<vector<float> >  Q(size, vector<float>(size, 0));
+// 		this -> Q = Q;
+// 	}
+// 	void setMatrixDiagonal(int block_ID);
 
-
-
-
-
-
+// };
 
 
 
 
 
 #endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
