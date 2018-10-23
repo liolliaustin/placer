@@ -57,6 +57,7 @@ public:
 	void createClique();
 	void createEdges(int iteration, vector<int>& verticies);
 	float setMatrixDiagonal(int block_ID);
+	float setRestofMatrix(int block_ID, int column);
 	void outputEdges(int iteration, vector<vector<int> >& Edges);
 	void defineMatrix();
 
@@ -149,34 +150,68 @@ float Objects::setMatrixDiagonal(int block_ID){
 	for(int i=2; i<netsFile[block_ID-1].size(); i++){
 		netsToCheck.push_back(netsFile[block_ID-1][i]);
 	}
-	// for(int i=0; i<netsToCheck.size(); i++){
-	// 	cout << netsToCheck[i] << " ";
-	// }
-	// cout << endl;
+
 	float matrixValue=0;
 
 	for(int i=0; i<netsToCheck.size(); i++){
-		matrixValue += edgeWeights[netsToCheck[i]];
+		matrixValue += edgeWeights[netsToCheck[i]-1];
 	}
+
+	netsToCheck.clear();
+
 	return matrixValue;
 }
+
+float Objects::setRestofMatrix(int block_ID, int column){
+	bool contains = false;
+	float matrixValue = 0;
+	vector<int> netsToCheck;
+	vector<int> netsCompare;
+	for(int i=2; i<netsFile[block_ID-1].size(); i++){
+		netsToCheck.push_back(netsFile[block_ID-1][i]);
+	}
+
+	for(int i=2; i<netsFile[column-1].size(); i++){
+		netsCompare.push_back(netsFile[column-1][i]);
+	}
+
+	for(int i=0; i<netsToCheck.size(); i++){
+		for(int j=0; j<netsCompare.size(); j++){
+			if(netsToCheck[i] == netsCompare[j])
+				matrixValue += edgeWeights[netsToCheck[i]-1];
+		}
+	}
+	if(matrixValue)
+		matrixValue = (-1)*matrixValue;
+	netsCompare.clear();
+	netsToCheck.clear();
+	return matrixValue;
+}
+
 
 void Objects::defineMatrix(){
 	vector<vector<float> > Q(netsFile.size(), vector<float>(netsFile.size(), 0));
 	this -> Q = Q;
-	float value;
 
 	for(int i=0; i<Q.size(); i++){
-		value = setMatrixDiagonal(i+1);
-		Q[i][i] = value;
+		Q[i][i] = setMatrixDiagonal(i+1);
 	}
 
 	for(int i=0; i<Q.size(); i++){
 		for(int j=0; j<Q.size(); j++){
-			cout << Q[i][j] << " ";
+			if(j!=i){
+				float QValue = setRestofMatrix(j+1,i+1);
+				Q[j][i] = QValue;
+				Q[i][j] = QValue;
+			}
 		}
-		cout << endl;
 	}
+	// for(int i=0; i<Q.size(); i++){
+	// 	for(int j=0; j<Q.size(); j++){
+	// 		cout << Q[i][j] << " ";
+	// 	}
+	// 	cout << endl;
+	// }
 }
 
 // class QMatrix{
