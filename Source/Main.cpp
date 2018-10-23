@@ -117,12 +117,11 @@ int main(int argc, char * argv[]) {
 	net.establishNetlist();
 	//net.outputNBB();
 	net.createClique();
-	//loat val;
-	// for(int i=0; i<20; i++){
-	// 	val = net.setMatrixDiagonal(i+1);
-	// 	cout <<"Value " << i+1 <<": " << val << endl;
-	// }
+	
 	net.defineMatrix();
+	net.defineBforX();
+	net.defineBforY();
+	net.UMFPACKIO();
 
 
 	return 0;

@@ -14,8 +14,15 @@ private:
 	vector<int> p;
 	vector<int> verticies;
 	vector<vector<float> >  Q;
+	vector<float> BX;
+	vector<float> BY;
+	int nz, n;
+	
 
 public:
+	vector<float> Ap;
+	vector<float> Ai;
+	vector<float> Ax;
 	float fixedX, fixedY, fixedBlockNum;
 
 //Fixed Block Definitions
@@ -60,7 +67,9 @@ public:
 	float setRestofMatrix(int block_ID, int column);
 	void outputEdges(int iteration, vector<vector<int> >& Edges);
 	void defineMatrix();
-
+	void defineBforX();
+	void defineBforY();
+	void UMFPACKIO();
 };
 
 void Objects::establishNetlist(){
@@ -188,14 +197,11 @@ float Objects::setRestofMatrix(int block_ID, int column){
 	return matrixValue;
 }
 
-
 void Objects::defineMatrix(){
 	vector<vector<float> > Q(netsFile.size(), vector<float>(netsFile.size(), 0));
-	this -> Q = Q;
-
-	for(int i=0; i<Q.size(); i++){
-		Q[i][i] = setMatrixDiagonal(i+1);
-	}
+	
+	int nz=0;
+	
 
 	for(int i=0; i<Q.size(); i++){
 		for(int j=0; j<Q.size(); j++){
@@ -204,8 +210,20 @@ void Objects::defineMatrix(){
 				Q[j][i] = QValue;
 				Q[i][j] = QValue;
 			}
+			else
+				Q[i][i] = setMatrixDiagonal(i+1);
+
+			if(Q[i][j] != 0)
+				nz += 1;
 		}
 	}
+
+	this -> Q = Q;
+	this -> nz=nz;
+	int n = Q.size();
+	this -> n=n;
+	
+	// cout << "nz = " << nz << endl;
 	// for(int i=0; i<Q.size(); i++){
 	// 	for(int j=0; j<Q.size(); j++){
 	// 		cout << Q[i][j] << " ";
@@ -214,64 +232,102 @@ void Objects::defineMatrix(){
 	// }
 }
 
-// class QMatrix{
-// private:
-// 	int size;
-// 	vector<vector<float> >  Q;
-// public:
-// 	QMatrix(int size){
-// 		this -> size = size;
-// 		vector<vector<float> >  Q(size, vector<float>(size, 0));
-// 		this -> Q = Q;
-// 	}
-// 	void setMatrixDiagonal(int block_ID);
+void Objects::defineBforX(){
+	vector<float> BX(netsFile.size(), 0);
+	
+	float fixedWeight;
+	int block_ID;
+	for(int i=0; i<fixedAmount(); i++){
+		vector<float> current = getFixedObject(i);
+		block_ID = (int)current[0];
+		fixedWeight = setMatrixDiagonal(block_ID);
+		BX[current[0]-1] = fixedWeight*current[1];
+		current.clear();
+	}
+	this -> BX = BX;
+	// cout << "Bx: " << endl;
+	// for(int i=0; i<BX.size(); i++){
+	// 	cout << BX[i] << endl;
+	// }
+	// cout << endl;
+}
 
-// };
+void Objects::defineBforY(){
+	vector<float> BY(netsFile.size(), 0);
+	
+	float fixedWeight;
+	int block_ID;
+	for(int i=0; i<fixedAmount(); i++){
+		vector<float> current = getFixedObject(i);
+		block_ID = (int)current[0];
+		fixedWeight = setMatrixDiagonal(block_ID);
+		BY[current[0]-1] = fixedWeight*current[2];
+		current.clear();
+	}
+	this -> BY = BY;
+	// cout << "BY: " << endl;
+	// for(int i=0; i<BY.size(); i++){
+	// 	cout << BY[i] << endl;
+	// }
+	// cout << endl;
+}
 
+void Objects::UMFPACKIO(){
+	vector<float> Ap;
+	vector<float> Ai;
+	vector<float> Ax;
+	
+	bool first = true;
 
+	for(int column=0; column<Q.size(); column++){
+		for(int row=0; row<Q.size(); row++){
+			if(Q[row][column] != 0){
+				Ai.push_back(row);
+				Ax.push_back(Q[row][column]);
+				if(first){
+					Ap.push_back(Ax.size() - 1);
+					first = false;
+				}
+			}
+			
+		}
+		first = true;
+	}
+	Ap.push_back(nz);
 
+	if(Ai.size() != nz)
+		cout << "Did not get right row vector"<< endl;
+	// else{
+	// 	cout << "Row Vector: ";
+	// 	for(int i=0; i<Ai.size(); i++)
+	// 		cout << Ai[i] << endl;
+	// }
+	// cout << endl;
+
+	if(Ax.size() != nz)
+		cout << "Did not get right values vector"<< endl;
+	// else{
+	// 	cout << "Values Vector: ";
+	// 	for(int i=0; i<Ax.size(); i++)
+	// 		cout << Ax[i] << endl;
+	// }
+	// cout << endl;
+
+	if(Ap.size() != Q.size() + 1)
+		cout << "Did not get right column vector"<< endl;
+	// else{
+	// 	cout << "Column Vector: ";
+	// 	for(int i=0; i<Ap.size(); i++)
+	// 		cout << Ap[i] << endl;
+	// }
+	// cout << endl;
+
+	this -> Ap = Ap;
+	this -> Ai = Ai;
+	this -> Ax = Ax;
+
+}
 
 
 #endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
