@@ -122,6 +122,8 @@ int main(int argc, char * argv[]) {
 	net.defineBforX();
 	net.defineBforY();
 	net.UMFPACKIO();
+	net.computeLocation();
+
 
 
 	return 0;
