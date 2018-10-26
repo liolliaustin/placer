@@ -17,7 +17,10 @@ private:
 	vector<vector<float> >  Q;
 	vector<float> BX;
 	vector<float> BY;
-	double *result;
+	vector<float>xPositions;
+	vector<float>yPositions;
+
+	double *resultx, *resulty;
 	int nz, n;
 	
 
@@ -37,7 +40,7 @@ public:
 //Block_ID with nets its attached to
 	void addNet(vector<int> add){
 		for (int i=0; i<add.size(); i++){
-			if (add[i] > maxnet)
+			if (i>1 && add[i] > maxnet)
 				maxnet = add[i];
 		}
 		netsFile.push_back(add);
@@ -53,11 +56,11 @@ public:
 
 	void outputNBB(){
 		for(int i=1; i<maxnet+1; i++){
-			// cout << "Net " << i << ": ";
-			// for(int j=0; j<netsBtwnBlocks[i].size(); j++){
-			// 	//cout << netsBtwnBlocks[i][j] << " ";
-			// }
-			cout << endl << "The Size is: " << netsBtwnBlocks[i].size() << endl;
+			cout << "Net " << i << ": ";
+			for(int j=0; j<netsBtwnBlocks[i].size(); j++){
+				cout << netsBtwnBlocks[i][j] << " ";
+			}
+			cout << endl; //<< "The Size is: " << netsBtwnBlocks[i].size() << endl;
 		}
 	}
 	vector<vector<int> > getNetSet(){return netsBtwnBlocks;}
@@ -73,6 +76,7 @@ public:
 	void defineBforY();
 	void UMFPACKIO();
 	void computeLocation();
+	void HPWL();
 };
 
 void Objects::establishNetlist(){
@@ -105,6 +109,10 @@ void Objects::createClique(){
 		edgeNum.push_back((current*(current - 1))/2);
 		edgeWeights.push_back(2/current);
 	}
+
+	// for(int i=0; i<edgeWeights.size(); i++){
+	// 	cout << "Net " << i +1 << " weight: " << edgeWeights[i] << endl;
+	// }
 	
 	this -> p = p;
 	this -> edgeNum = edgeNum;
@@ -159,14 +167,14 @@ void Objects::outputEdges(int iteration, vector<vector<int> >& Edges){
 
 float Objects::setMatrixDiagonal(int block_ID){
 	vector<int> netsToCheck;
-	for(int i=2; i<netsFile[block_ID-1].size(); i++){
-		netsToCheck.push_back(netsFile[block_ID-1][i]);
+	for(int i=2; i<netsFile[block_ID].size(); i++){
+		netsToCheck.push_back(netsFile[block_ID][i]);
 	}
 
 	float matrixValue=0;
 
 	for(int i=0; i<netsToCheck.size(); i++){
-		matrixValue += edgeWeights[netsToCheck[i]-1];
+		matrixValue += (p[netsToCheck[i]-1] - 1)*edgeWeights[netsToCheck[i]-1];
 	}
 
 	netsToCheck.clear();
@@ -179,12 +187,12 @@ float Objects::setRestofMatrix(int block_ID, int column){
 	float matrixValue = 0;
 	vector<int> netsToCheck;
 	vector<int> netsCompare;
-	for(int i=2; i<netsFile[block_ID-1].size(); i++){
-		netsToCheck.push_back(netsFile[block_ID-1][i]);
+	for(int i=2; i<netsFile[block_ID].size(); i++){
+		netsToCheck.push_back(netsFile[block_ID][i]);
 	}
 
-	for(int i=2; i<netsFile[column-1].size(); i++){
-		netsCompare.push_back(netsFile[column-1][i]);
+	for(int i=2; i<netsFile[column].size(); i++){
+		netsCompare.push_back(netsFile[column][i]);
 	}
 
 	for(int i=0; i<netsToCheck.size(); i++){
@@ -201,7 +209,8 @@ float Objects::setRestofMatrix(int block_ID, int column){
 }
 
 void Objects::defineMatrix(){
-	vector<vector<float> > Q(netsFile.size(), vector<float>(netsFile.size(), 0));
+	int size = netsFile.size() - fixed.size();
+	vector<vector<float> > Q(size, vector<float>(size, 0));
 	
 	int nz=0;
 	
@@ -209,12 +218,12 @@ void Objects::defineMatrix(){
 	for(int i=0; i<Q.size(); i++){
 		for(int j=0; j<Q.size(); j++){
 			if(j!=i){
-				float QValue = setRestofMatrix(j+1,i+1);
+				float QValue = setRestofMatrix(j+fixed.size(),i+fixed.size());
 				Q[j][i] = QValue;
 				Q[i][j] = QValue;
 			}
 			else
-				Q[i][j] = setMatrixDiagonal(i+1);
+				Q[i][j] = setMatrixDiagonal(i+fixed.size());
 
 			if(Q[i][j] != 0)
 				nz += 1;
@@ -227,22 +236,23 @@ void Objects::defineMatrix(){
 	this -> n=n;
 	
 	//cout << "nz = " << nz << endl;
-	for(int i=0; i<Q.size(); i++){
-		//for(int j=0; j<Q.size(); j++){
-		cout << Q[i][0] << endl;
-		//}
-		// cout << endl;
-	}
+	// for(int i=0; i<Q.size(); i++){
+	// 	for(int j=0; j<Q.size(); j++){
+	// 		cout << Q[i][i] << endl;
+	// 	}
+	// 	cout << endl;
+	// }
 }
 
 void Objects::defineBforX(){
-	vector<float> BX(netsFile.size(), 0);
+	int size = netsFile.size() - fixed.size();
+	vector<float> BX(size, 0);
 
 	vector<int> netsToCheck;
 	vector<int> netsCompare;
 	float xPosition, matrixValue=0;
 	int stopValue = (int)fixed[0][0];
-	for(int i=netsFile.size()-1; i>stopValue-1; i--){
+	for(int i=fixed.size(); i<netsFile.size(); i++){
 		for(int j=2; j<netsFile[i].size(); j++)
 			netsToCheck.push_back(netsFile[i][j]);
 
@@ -263,37 +273,62 @@ void Objects::defineBforX(){
 			netsCompare.clear();
 
 		}
-		BX[i] = matrixValue;
+		
+		BX[i-fixed.size()] = matrixValue;
 		matrixValue = 0;
 		netsToCheck.clear();
 	}
 	this -> BX = BX;
-	cout << "BX: " << endl;
-	for(int i=0; i<BX.size(); i++){
-		cout << BX[i] << endl;
-	}
-	cout << endl;
+	// cout << "BX: " << endl;
+	// for(int i=0; i<BX.size(); i++){
+	// 	cout << BX[i] << endl;
+	// }
+	// cout << endl;
+
+	int startValue = (int)fixed[0][0];
+
 	
 }
 
 void Objects::defineBforY(){
-	vector<float> BY(netsFile.size(), 0);
-	
-	float fixedWeight;
-	int block_ID;
-	for(int i=0; i<fixedAmount(); i++){
-		vector<float> current = getFixedObject(i);
-		block_ID = (int)current[0];
-		fixedWeight = setMatrixDiagonal(block_ID);
-		BY[current[0]-1] = fixedWeight*current[2];
-		current.clear();
+	int size = netsFile.size() - fixed.size();
+	vector<float> BY(size, 0);
+
+	vector<int> netsToCheck;
+	vector<int> netsCompare;
+	float yPosition, matrixValue=0;
+	int stopValue = (int)fixed[0][0];
+	for(int i=fixed.size(); i<netsFile.size(); i++){
+		for(int j=2; j<netsFile[i].size(); j++)
+			netsToCheck.push_back(netsFile[i][j]);
+
+		for(int j=0; j<fixedAmount(); j++){
+			int row = fixed[j][0] - 1;
+			for(int k=2; k<netsFile[j].size(); k++)
+				netsCompare.push_back(netsFile[row][k]);
+
+			yPosition = fixed[j][2];
+			for(int k=0; k<netsToCheck.size(); k++){
+				for(int l=0; l<netsCompare.size(); l++){
+					if(netsToCheck[k] == netsCompare[l]){
+						matrixValue += edgeWeights[netsCompare[l] -1]*yPosition;
+					}
+				}
+			}
+			
+			netsCompare.clear();
+
+		}
+		BY[i-fixed.size()] = matrixValue;
+		matrixValue = 0;
+		netsToCheck.clear();
 	}
 	this -> BY = BY;
-	cout << "BY: " << endl;
-	for(int i=0; i<BY.size(); i++){
-		cout << BY[i] << endl;
-	}
-	cout << endl;
+	// cout << "BY: " << endl;
+	// for(int i=0; i<BY.size(); i++){
+	// 	cout << BY[i] << endl;
+	// }
+	// cout << endl;
 }
 
 void Objects::UMFPACKIO(){
@@ -353,24 +388,25 @@ void Objects::UMFPACKIO(){
 }
 void Objects::computeLocation(){
 	double *null = (double *) NULL ;
-	double *result, *Axarr, *BXarr, *BYarr;
+	double *resultx, *resulty, *Axarr, *BXarr, *BYarr;
 	int *Aparr, *Aiarr;
-	result = new double [netsFile.size()];
+	resultx = new double [Q.size()];
+	resulty = new double [Q.size()];
 	Aparr = new int [Q.size() + 1];
 	Axarr = new double [nz];
 	Aiarr = new int [nz];
-	BXarr = new double [netsFile.size()];
-	BYarr = new double [netsFile.size()];
+	BXarr = new double [Q.size()];
+	BYarr = new double [Q.size()];
 
-	for(int i=0; i<netsFile.size(); i++){
+	for(int i=0; i<Q.size(); i++){
 		BXarr[i] = BX[i];
 		BYarr[i] = BY[i];
 	}
-	// for(int i=0; i<netsFile.size(); i++){
+	// for(int i=0; i<Q.size(); i++){
 	// 	cout << BXarr[i] << " ";
 	// }
 	// cout << endl << endl;
-	// for(int i=0; i<netsFile.size(); i++){
+	// for(int i=0; i<Q.size(); i++){
 	// 	cout << BYarr[i] << " ";
 	// }
 	// cout << endl << endl;
@@ -400,25 +436,27 @@ void Objects::computeLocation(){
 
 	int i ;
 	int n=Q.size();
-	void *Symbolic, *Numeric ;
-	(void) umfpack_di_symbolic (n, n, Aparr, Aiarr, Axarr, &Symbolic, null, null) ;
-	(void) umfpack_di_numeric (Aparr, Aiarr, Axarr, Symbolic, &Numeric, null, null) ;
-	umfpack_di_free_symbolic (&Symbolic) ;
+	void *Symbolicx, *Numericx, *Symbolicy, *Numericy  ;
+	(void) umfpack_di_symbolic (n, n, Aparr, Aiarr, Axarr, &Symbolicx, null, null) ;
+	(void) umfpack_di_numeric (Aparr, Aiarr, Axarr, Symbolicx, &Numericx, null, null) ;
+	umfpack_di_free_symbolic (&Symbolicx) ;
 
-	(void) umfpack_di_solve (UMFPACK_A, Aparr, Aiarr, Axarr, result, BXarr, Numeric, null, null) ;
-	umfpack_di_free_numeric (&Numeric) ;
-	for (i = 0 ; i < n ; i++) printf ("x [%d] = %g\n", i, result[i]) ;
+	(void) umfpack_di_solve (UMFPACK_A, Aparr, Aiarr, Axarr, resultx, BXarr, Numericx, null, null) ;
+	umfpack_di_free_numeric (&Numericx) ;
+	//for (i = 0 ; i < n ; i++) printf ("x [%d] = %g\n", i, resultx[i]) ;
 
-	cout << endl << endl;
+	//cout << endl << endl;
 
-	// (void) umfpack_di_solve (UMFPACK_A, Aparr, Aiarr, Axarr, result, BYarr, Numeric, null, null) ;
-	// umfpack_di_free_numeric (&Numeric) ;
-	// for (i = 0 ; i < n ; i++) printf ("Y [%d] = %g\n", i, result[i]) ;
+	(void) umfpack_di_symbolic (n, n, Aparr, Aiarr, Axarr, &Symbolicy, null, null) ;
+	(void) umfpack_di_numeric (Aparr, Aiarr, Axarr, Symbolicy, &Numericy, null, null) ;
+	umfpack_di_free_symbolic (&Symbolicy) ;
 
-	
-	
+	(void) umfpack_di_solve (UMFPACK_A, Aparr, Aiarr, Axarr, resulty, BYarr, Numericy, null, null) ;
+	umfpack_di_free_numeric (&Numericy) ;
+	//for (i = 0 ; i < n ; i++) printf ("Y [%d] = %g\n", i, resulty[i]) ;
 
-	this -> result = result;
+	this -> resultx = resultx;
+	this -> resulty = resulty;
 
 	delete [] Aparr;
 	delete [] Aiarr;
@@ -426,6 +464,81 @@ void Objects::computeLocation(){
 	delete [] BXarr;
 	delete [] BYarr;
 
+}
+
+void Objects::HPWL(){
+	vector<float> xPositions;
+	vector<float> yPositions;
+	vector<float> hpwl;
+
+	for(int i=fixed.size()-1; i>=0; i--){
+		xPositions.push_back(fixed[i][1]);
+		yPositions.push_back(fixed[i][2]);
+	}
+
+	for(int i=0; i<Q.size(); i++){
+		xPositions.push_back(resultx[i]);
+		yPositions.push_back(resulty[i]);
+	}
+
+	this -> xPositions = xPositions;
+	this -> yPositions = yPositions;
+
+	// for(int i=0; i<xPositions.size(); i++){
+	// 	cout <<"x[" << i << "] = " << xPositions[i] << endl;
+	// }
+	// for(int i=0; i<yPositions.size(); i++){
+	// 	cout <<"y[" << i << "] = " << yPositions[i] << endl;
+	// }
+
+	float currentBlock, total;
+
+	for(int i=1; i<netsBtwnBlocks.size();i++){
+		float yMax=0, yMin, xMax=0, xMin;
+		for(int j=0; j<netsBtwnBlocks[i].size(); j++){
+			currentBlock = netsBtwnBlocks[i][j];
+			//cout << currentBlock << " ";
+
+			if(j==0){
+				xMin = xPositions[currentBlock-1];
+				yMin = yPositions[currentBlock-1];
+			}
+
+			if(xPositions[currentBlock-1] < xMin){
+				if(xMin > xMax){
+					xMax = xMin;
+					xMin = xPositions[currentBlock-1];
+				}
+				else
+					xMin = xPositions[currentBlock-1];
+			}
+
+			else if(xPositions[currentBlock-1] > xMax)
+				xMax = xPositions[currentBlock-1];
+
+			if(yPositions[currentBlock-1] < yMin){
+				if(yMin > yMax){
+					yMax = yMin;
+					yMin = yPositions[currentBlock-1];
+				}
+				else
+					yMin = yPositions[currentBlock-1];
+			}
+
+			else if(yPositions[currentBlock-1] > yMax)
+				yMax = yPositions[currentBlock-1];
+
+
+		}
+		hpwl.push_back((xMax - xMin) + (yMax - yMin));
+
+		//cout <<endl << "Net " << i << ": " << endl << "xMax = " << xMax <<  endl << "xMin = " << xMin <<  endl << "yMax = " << yMax <<  endl << "yMin = " << yMin << endl << endl;
+	}
+
+	for(int i=0; i<hpwl.size(); i++)
+		total += hpwl[i];
+
+	cout << "Total: " << total << endl;
 }
 
 #endif

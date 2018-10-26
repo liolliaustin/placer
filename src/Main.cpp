@@ -123,6 +123,7 @@ int main(int argc, char * argv[]) {
 	net.defineBforY();
 	net.UMFPACKIO();
 	net.computeLocation();
+	net.HPWL();
 
 
 
