@@ -1,6 +1,7 @@
 #ifndef __CLASSES_INCLUDED__
 #define __CLASSES_INCLUDED__
 #include "umfpack.h"
+#include <math.h>
 using namespace std;
 
 class Objects{
@@ -22,6 +23,7 @@ private:
 
 	double *resultx, *resulty;
 	int nz, n;
+	float N;
 	
 
 public:
@@ -50,6 +52,11 @@ public:
 	int blocksAmount(){return netsFile.size();}
 	
 	vector<int> getNextNet(int x){return netsFile[x];}
+	void getN(){
+		int m = netsFile.size();
+		float N = ceil(sqrt(m));
+		this -> N = N;
+	}
 
 //Each net with all blocks it contains
 	void establishNetlist();
@@ -77,7 +84,23 @@ public:
 	void UMFPACKIO();
 	void computeLocation();
 	void HPWL();
+	void overlapRemoval(float centerx, float centery, vector<int> &blocks);
+
+//For each step
+	void runStep1();
 };
+
+void Objects::runStep1(){
+	getN();
+	establishNetlist();
+	createClique();
+	defineMatrix();
+	defineBforX();
+	defineBforY();
+	UMFPACKIO();
+	computeLocation();
+	HPWL();
+}
 
 void Objects::establishNetlist(){
 	vector<vector<int> > netsBtwnBlocks(maxnet+1, vector<int>());
@@ -96,7 +119,6 @@ void Objects::establishNetlist(){
 	}
 
 	this -> netsBtwnBlocks = netsBtwnBlocks;
-
 }
 
 void Objects::createClique(){
@@ -121,9 +143,8 @@ void Objects::createClique(){
 	// for(int i=0; i<p.size(); i++){
 	// 	createEdges(i, netsBtwnBlocks[i+1]);
 	// }
-
 }
-//somehow recursively create edges for given list of blocks attached to net
+
 void Objects::createEdges(int iteration, vector<int>& verticies){
 	int location = 0;
 	int connected = 1;
@@ -285,9 +306,7 @@ void Objects::defineBforX(){
 	// }
 	// cout << endl;
 
-	int startValue = (int)fixed[0][0];
-
-	
+	int startValue = (int)fixed[0][0];	
 }
 
 void Objects::defineBforY(){
@@ -384,8 +403,8 @@ void Objects::UMFPACKIO(){
 	this -> Ap = Ap;
 	this -> Ai = Ai;
 	this -> Ax = Ax;
-
 }
+
 void Objects::computeLocation(){
 	double *null = (double *) NULL ;
 	double *resultx, *resulty, *Axarr, *BXarr, *BYarr;
@@ -463,7 +482,6 @@ void Objects::computeLocation(){
 	delete [] Axarr;
 	delete [] BXarr;
 	delete [] BYarr;
-
 }
 
 void Objects::HPWL(){
@@ -484,9 +502,12 @@ void Objects::HPWL(){
 	this -> xPositions = xPositions;
 	this -> yPositions = yPositions;
 
-	// for(int i=0; i<xPositions.size(); i++){
-	// 	cout <<"x[" << i << "] = " << xPositions[i] << endl;
-	// }
+	for(int i=0; i<xPositions.size(); i++){
+		cout <<"Block " << i+1 << ": = (" << xPositions[i] << "," << yPositions[i] <<")" << endl;
+	}
+
+	cout << endl;
+
 	// for(int i=0; i<yPositions.size(); i++){
 	// 	cout <<"y[" << i << "] = " << yPositions[i] << endl;
 	// }
@@ -539,6 +560,99 @@ void Objects::HPWL(){
 		total += hpwl[i];
 
 	cout << "Total: " << total << endl;
+	cout << "N: " << N << endl;
+
+	vector<int> blocks;
+
+	for(int i=fixed.size(); i<netsFile.size(); i++){
+		blocks.push_back(i+1);
+	}
+
+	overlapRemoval(N/2, N/2, blocks);
+}
+
+//assume blocks stores the actual value of block 1-20
+void Objects::overlapRemoval(float centerx, float centery, vector<int> &blocks){
+	bool filled = false;
+	float xl = centerx/2, xr=3*(centerx/2);
+	float yl = centery/2, yu = 3*(centery/2);
+
+	vector<float> update_positions_x;
+	vector<float> update_positions_y;
+	vector<float> unorderedX;
+	vector<float> unorderedY;
+	vector<float> orderedX;
+	vector<float> orderedY;
+
+	float minX, location;
+	float mediany, medianx, median;
+
+	for(int i=0; i<blocks.size(); i++){
+		update_positions_x.push_back(xPositions[blocks[i]-1]);
+		unorderedX.push_back(xPositions[blocks[i]-1]);
+		update_positions_y.push_back(yPositions[blocks[i]-1]);
+		unorderedY.push_back(yPositions[blocks[i]-1]);
+	}
+
+	for(int i=0; i<unorderedX.size(); i++){
+		minX = unorderedX[i];
+		for(int j=0; j<unorderedX.size(); j++){
+			if(unorderedX[j] < minX){
+				minX = unorderedX[j];
+				j=location;
+			}
+		}
+		orderedX.push_back(minX);
+		unorderedX.erase(unorderedX.begin()+location);
+	}
+
+	for(int i=0; i<orderedX.size(); i++){
+		cout << orderedX[i] << " ";
+	}
+
+	vector<int> blocksLowerLeft;
+	vector<int> blocksLowerRight;
+	vector<int> blocksUpperLeft;
+	vector<int> blocksUpperRight;
+
+	for(int i=0; i<update_positions_x.size(); i++){
+		if(update_positions_x[i] > medianx){
+			if(update_positions_y[i] > mediany)
+				blocksUpperRight.push_back(blocks[i]-1);
+			else
+				blocksLowerRight.push_back(blocks[i]-1);
+		}
+		else{
+			if(update_positions_y[i] > mediany)
+				blocksUpperLeft.push_back(blocks[i]-1);
+			else
+				blocksLowerLeft.push_back(blocks[i]-1);
+		}
+	}
+
+	cout << "Lower Left" << endl;
+	for(int i=0; i<blocksLowerLeft.size(); i++){
+		cout << blocksLowerLeft[i] << " ";
+	}
+
+	cout << endl << "Lower Right" << endl;
+	for(int i=0; i<blocksLowerRight.size(); i++){
+		cout << blocksLowerRight[i] << " ";
+	}
+
+	cout << endl << "Upper Left" << endl;
+	for(int i=0; i<blocksUpperLeft.size(); i++){
+		cout << blocksUpperLeft[i] << " ";
+	}
+
+	cout << endl << "Upper Right" << endl;
+	for(int i=0; i<blocksUpperRight.size(); i++){
+		cout << blocksUpperRight[i] << " ";
+	}
+
+
+
+
 }
 
 #endif

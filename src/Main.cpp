@@ -113,17 +113,16 @@ int main(int argc, char * argv[]) {
 	// int maxnet = net.getMaxNet();
 	// cout << endl << "The Largest Net is: " << maxnet;
 	// cout << endl;
-
-	net.establishNetlist();
-	//net.outputNBB();
-	net.createClique();
-	
-	net.defineMatrix();
-	net.defineBforX();
-	net.defineBforY();
-	net.UMFPACKIO();
-	net.computeLocation();
-	net.HPWL();
+	// net.getN();
+	// net.establishNetlist();
+	// net.createClique();
+	// net.defineMatrix();
+	// net.defineBforX();
+	// net.defineBforY();
+	// net.UMFPACKIO();
+	// net.computeLocation();
+	// net.HPWL();
+	net.runStep1();
 
 
 
