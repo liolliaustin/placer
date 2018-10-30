@@ -94,13 +94,13 @@ int main(int argc, char * argv[]) {
 	Utils * ut = new Utils(net);
 	ut->get_configuration(argv[1]);
 
-	// for(int i=0; i<net.blocksAmount(); i++){
-	// 	vector<int> current = net.getNextNet(i);
-	// 	for(int j=0; j<current.size(); j++){
-	// 		cout << current[j] << " ";
-	// 	}
-	// 	cout << endl;
-	// }
+	for(int i=0; i<net.blocksAmount(); i++){
+		vector<int> current = net.getNextNet(i);
+		for(int j=0; j<current.size(); j++){
+			cout << current[j] << " ";
+		}
+		cout << endl;
+	}
 	// for(int i=0; i<net.fixedAmount(); i++){
 	// 	vector<float> current = net.getFixedObject(i);
 	// 	for(int j=0; j<current.size(); j++){

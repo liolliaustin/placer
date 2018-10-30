@@ -35,9 +35,7 @@ public:
 //Fixed Block Definitions
 	void addFixedObject(vector<float> next){fixed.push_back(next);}
 	int fixedAmount(){return fixed.size();}
-	vector<float> getFixedObject(int x){
-		return fixed[x];
-	}
+	vector<float> getFixedObject(int x){return fixed[x];}
 
 //Block_ID with nets its attached to
 	void addNet(vector<int> add){
@@ -59,7 +57,7 @@ public:
 	}
 
 //Each net with all blocks it contains
-	void establishNetlist();
+	void establishNetlist(int size);
 
 	void outputNBB(){
 		for(int i=1; i<maxnet+1; i++){
@@ -78,32 +76,38 @@ public:
 	float setMatrixDiagonal(int block_ID);
 	float setRestofMatrix(int block_ID, int column);
 	void outputEdges(int iteration, vector<vector<int> >& Edges);
-	void defineMatrix();
+	void defineMatrix(int size1, int size2);
 	void defineBforX();
 	void defineBforY();
 	void UMFPACKIO();
 	void computeLocation();
 	void HPWL();
-	void overlapRemoval(float centerx, float centery, vector<int> &blocks);
+	void overlapRemoval(int cut, float centerx, float centery, vector<int> &blocks);
 
 //For each step
 	void runStep1();
+
+//Recursion
+	void recursiveNetlist(vector<int> &blocks, float centerx, float centery);
+	void setRecursiveMatrix(int size, vector<float> &newP, vector<float> &newWeights, vector<vector<int> > &recursiveNetFile);
+	float setRecursiveMatrixDiagonal(int position, vector<float> &newP, vector<float> &newWeights, vector<vector<int> > &recursiveNetFile);
+	float setRecursiveRestofMatrix(int block_ID, int column, vector<float> &newWeights, vector<vector<int> > &recursiveNetFile);
+	void setRecursiveBX(vector<vector<int> > &recursiveNetFile, vector<vector<float> > &newFixedBlocks, vector<float> &newWeights);
 };
 
 void Objects::runStep1(){
 	getN();
-	establishNetlist();
+	establishNetlist(maxnet+1);
+	outputNBB();
 	createClique();
-	defineMatrix();
-	defineBforX();
-	defineBforY();
+	defineMatrix(netsFile.size(),fixed.size());
 	UMFPACKIO();
 	computeLocation();
 	HPWL();
 }
 
-void Objects::establishNetlist(){
-	vector<vector<int> > netsBtwnBlocks(maxnet+1, vector<int>());
+void Objects::establishNetlist(int size){
+	vector<vector<int> > netsBtwnBlocks(size, vector<int>());
 	vector<int> currentNet;
 	int value;
 
@@ -229,8 +233,8 @@ float Objects::setRestofMatrix(int block_ID, int column){
 	return matrixValue;
 }
 
-void Objects::defineMatrix(){
-	int size = netsFile.size() - fixed.size();
+void Objects::defineMatrix(int size1, int size2){
+	int size = size1 - size2;
 	vector<vector<float> > Q(size, vector<float>(size, 0));
 	
 	int nz=0;
@@ -239,12 +243,12 @@ void Objects::defineMatrix(){
 	for(int i=0; i<Q.size(); i++){
 		for(int j=0; j<Q.size(); j++){
 			if(j!=i){
-				float QValue = setRestofMatrix(j+fixed.size(),i+fixed.size());
+				float QValue = setRestofMatrix(j+size2,i+size2);
 				Q[j][i] = QValue;
 				Q[i][j] = QValue;
 			}
 			else
-				Q[i][j] = setMatrixDiagonal(i+fixed.size());
+				Q[i][j] = setMatrixDiagonal(i+size2);
 
 			if(Q[i][j] != 0)
 				nz += 1;
@@ -256,6 +260,8 @@ void Objects::defineMatrix(){
 	int n = Q.size();
 	this -> n=n;
 	
+	defineBforX();
+	defineBforY();
 	//cout << "nz = " << nz << endl;
 	// for(int i=0; i<Q.size(); i++){
 	// 	for(int j=0; j<Q.size(); j++){
@@ -488,6 +494,7 @@ void Objects::HPWL(){
 	vector<float> xPositions;
 	vector<float> yPositions;
 	vector<float> hpwl;
+	vector<int> blocks;
 
 	for(int i=fixed.size()-1; i>=0; i--){
 		xPositions.push_back(fixed[i][1]);
@@ -503,7 +510,9 @@ void Objects::HPWL(){
 	this -> yPositions = yPositions;
 
 	for(int i=0; i<xPositions.size(); i++){
-		cout <<"Block " << i+1 << ": = (" << xPositions[i] << "," << yPositions[i] <<")" << endl;
+		if(i>=fixed.size())
+			blocks.push_back(i);
+		cout <<"Block " << i << ": = (" << xPositions[i] << "," << yPositions[i] <<")" << endl;
 	}
 
 	cout << endl;
@@ -562,20 +571,14 @@ void Objects::HPWL(){
 	cout << "Total: " << total << endl;
 	cout << "N: " << N << endl;
 
-	vector<int> blocks;
-
-	for(int i=fixed.size(); i<netsFile.size(); i++){
-		blocks.push_back(i+1);
-	}
-
-	overlapRemoval(N/2, N/2, blocks);
+	overlapRemoval(1, N/2, N/2, blocks);
 }
 
 //assume blocks stores the actual value of block 1-20
-void Objects::overlapRemoval(float centerx, float centery, vector<int> &blocks){
+void Objects::overlapRemoval(int cut, float centerx, float centery, vector<int> &blocks){
 	bool filled = false;
-	float xl = centerx/2, xr=3*(centerx/2);
-	float yl = centery/2, yu = 3*(centery/2);
+	float xl = cut*centerx/2, xr=cut*3*(centerx/2);
+	float yl = cut*centery/2, yu = cut*3*(centery/2);
 
 	vector<float> update_positions_x;
 	vector<float> update_positions_y;
@@ -584,7 +587,7 @@ void Objects::overlapRemoval(float centerx, float centery, vector<int> &blocks){
 	vector<float> orderedX;
 	vector<float> orderedY;
 
-	float minX, location;
+	float minX, minY, location;
 	float mediany, medianx, median;
 
 	for(int i=0; i<blocks.size(); i++){
@@ -594,21 +597,52 @@ void Objects::overlapRemoval(float centerx, float centery, vector<int> &blocks){
 		unorderedY.push_back(yPositions[blocks[i]-1]);
 	}
 
-	for(int i=0; i<unorderedX.size(); i++){
-		minX = unorderedX[i];
-		for(int j=0; j<unorderedX.size(); j++){
-			if(unorderedX[j] < minX){
-				minX = unorderedX[j];
-				j=location;
+	while(orderedX.size() != unorderedX.size()){
+		for(int i=0; i<unorderedX.size(); i++){
+			if(unorderedX[i]>0){
+				minX = unorderedX[i];
+				location = i;
+				break;
 			}
 		}
+		for(int i=0; i<unorderedX.size(); i++){
+			if(unorderedX[i]<minX && unorderedX[i]>0){
+				minX = unorderedX[i];
+				location = i;
+			}
+		}
+
 		orderedX.push_back(minX);
-		unorderedX.erase(unorderedX.begin()+location);
+		unorderedX[location] = (-1)*unorderedX[location];
 	}
 
-	for(int i=0; i<orderedX.size(); i++){
-		cout << orderedX[i] << " ";
+
+	while(orderedY.size() != unorderedY.size()){
+		for(int i=0; i<unorderedY.size(); i++){
+			if(unorderedY[i]>0){
+				minY = unorderedY[i];
+				location = i;
+				break;
+			}
+		}
+		for(int i=0; i<unorderedY.size(); i++){
+			if(unorderedY[i]<minY && unorderedY[i]>0){
+				minY = unorderedY[i];
+				location = i;
+			}
+		}
+
+		orderedY.push_back(minY);
+		unorderedY[location] = (-1)*unorderedY[location];
 	}
+
+	medianx = orderedX[ceil(orderedX.size()/2)];
+	mediany = orderedY[ceil(orderedY.size()/2)];
+
+	unorderedX.clear();
+	unorderedY.clear();
+	orderedX.clear();
+	orderedY.clear();
 
 	vector<int> blocksLowerLeft;
 	vector<int> blocksLowerRight;
@@ -618,42 +652,258 @@ void Objects::overlapRemoval(float centerx, float centery, vector<int> &blocks){
 	for(int i=0; i<update_positions_x.size(); i++){
 		if(update_positions_x[i] > medianx){
 			if(update_positions_y[i] > mediany)
-				blocksUpperRight.push_back(blocks[i]-1);
+				blocksUpperRight.push_back(blocks[i]);
 			else
-				blocksLowerRight.push_back(blocks[i]-1);
+				blocksLowerRight.push_back(blocks[i]);
 		}
 		else{
 			if(update_positions_y[i] > mediany)
-				blocksUpperLeft.push_back(blocks[i]-1);
+				blocksUpperLeft.push_back(blocks[i]);
 			else
-				blocksLowerLeft.push_back(blocks[i]-1);
+				blocksLowerLeft.push_back(blocks[i]);
 		}
 	}
 
-	cout << "Lower Left" << endl;
+	cout << "Lower Left: " << blocksLowerLeft.size() << endl;
 	for(int i=0; i<blocksLowerLeft.size(); i++){
 		cout << blocksLowerLeft[i] << " ";
 	}
 
-	cout << endl << "Lower Right" << endl;
+	cout << endl << "Lower Right:" << blocksLowerRight.size()<< endl;
 	for(int i=0; i<blocksLowerRight.size(); i++){
 		cout << blocksLowerRight[i] << " ";
 	}
 
-	cout << endl << "Upper Left" << endl;
+	cout << endl << "Upper Left: " << blocksUpperLeft.size()<< endl;
 	for(int i=0; i<blocksUpperLeft.size(); i++){
 		cout << blocksUpperLeft[i] << " ";
 	}
 
-	cout << endl << "Upper Right" << endl;
+	cout << endl << "Upper Right: " << blocksUpperRight.size()<< endl;
 	for(int i=0; i<blocksUpperRight.size(); i++){
 		cout << blocksUpperRight[i] << " ";
 	}
 
+	cout << endl << endl;
+	recursiveNetlist(blocksLowerLeft, xl, yl);
+	recursiveNetlist(blocksLowerRight, xr, yl);
+	recursiveNetlist(blocksUpperLeft, xl, yu);
+	recursiveNetlist(blocksUpperRight, xr, yu);
+}
 
+void Objects::recursiveNetlist(vector<int> &blocks, float centerx, float centery){
+	vector<vector<int> > recursiveNetFile;
+	vector<vector<float> > newFixedBlocks;
+	vector<float> newFixed;
+	vector<int> newNet;
+	vector<float> newWeights;
+	vector<float> newP;
 
+	for(int i=0; i<fixed.size(); i++){
+		recursiveNetFile.push_back(netsFile[i]);
+	}
+
+	for(int i=0; i<blocks.size(); i++){
+		recursiveNetFile.push_back(netsFile[blocks[i]-1]);
+	}
+
+	for(int i=fixed.size()-1; i>=0; i--){
+		newFixedBlocks.push_back(fixed[i]);
+	}
+
+	newFixed.push_back(netsFile.size() + 1);
+	newFixed.push_back(centerx);
+	newFixed.push_back(centery);
+	newFixedBlocks.push_back(newFixed);
+	newFixed.clear();
+
+	newNet.push_back(netsFile.size() + 1);
+	newNet.push_back(0);
+	int firstnet = netsBtwnBlocks.size();
+	for(int i=fixed.size(); i<recursiveNetFile.size(); i++){
+		recursiveNetFile[i].push_back(firstnet);
+		newNet.push_back(firstnet);
+		firstnet++;
+	}
+	recursiveNetFile.push_back(newNet);
+	newNet.clear();
+
+	for(int i=0; i<edgeWeights.size(); i++){
+		newWeights.push_back(edgeWeights[i]);
+	}
+
+	for(int i=2; i<recursiveNetFile[recursiveNetFile.size()-1].size(); i++){
+		newWeights.push_back(1);
+	}
+
+	for(int i=0; i<p.size(); i++){
+		newP.push_back(p[i]);
+	}
+
+	for(int i=2; i<recursiveNetFile[recursiveNetFile.size()-1].size(); i++){
+		newP.push_back(2);
+	}
+
+	// vector<int> netsToCheck(maxnet+1,0);
+
+	// for(int i=fixed.size(); i<recursiveNetFile.size()-1; i++){
+	// 	for(int j=2; j<recursiveNetFile[i].size(); j++)
+	// 		netsToCheck[recursiveNetFile[i][j]] += 1;
+	// }
+
+	// for(int i=0; i<newWeights.size(); i++){
+	// 	cout <<"Edge " << i << " weight: " <<  newWeights[i] << endl;
+	// }
+	// cout << endl;
+
+	// for(int i=0; i<newP.size(); i++){
+	// 	cout <<"P " << i <<": "<<  newP[i] << endl;
+	// }
+	// cout << endl;
+
+	setRecursiveMatrix(recursiveNetFile.size() - fixed.size() - 1, newP, newWeights,recursiveNetFile);
+	//setRecursiveBX(recursiveNetFile, newFixedBlocks, newWeights);
+
+	// for(int i=0; i<newFixedBlocks.size(); i++){
+	// 	for(int j=0; j<newFixedBlocks[i].size(); j++)	
+	// 		cout << newFixedBlocks[i][j] << " ";
+	// 	cout << endl;
+	// }
+	// cout << endl;
+
+	// for(int i=0; i<recursiveNetFile.size(); i++){
+	// 	for(int j=0; j<recursiveNetFile[i].size(); j++)
+	// 		cout << recursiveNetFile[i][j] << " ";
+	// 	cout << endl;
+	// }
+}
+
+void Objects::setRecursiveMatrix(int size, vector<float> &newP, vector<float> &newWeights, vector<vector<int> > &recursiveNetFile){
+	vector<vector<float> > Qnew(size, vector<float>(size, 0));
+	int size2 = fixed.size();
+	int nz=0;
+	
+	for(int i=0; i<Qnew.size(); i++){
+		for(int j=0; j<Qnew.size(); j++){
+			if(j!=i){
+				float QValue = setRecursiveRestofMatrix(j+size2,i+size2,newWeights, recursiveNetFile);
+				Qnew[j][i] = QValue;
+				Qnew[i][j] = QValue;
+			}
+			else
+				Qnew[i][j] = setRecursiveMatrixDiagonal(i+size2, newP, newWeights, recursiveNetFile);
+
+			if(Qnew[i][j] != 0)
+				nz += 1;
+		}
+	}
+
+	for(int i=0; i<Qnew.size(); i++){
+		for(int j=0; j<Qnew.size(); j++){
+			cout << Qnew[i][j] << endl;
+		}
+		cout << endl;
+	}
 
 }
+
+float Objects::setRecursiveMatrixDiagonal(int position, vector<float> &newP, vector<float> &newWeights, vector<vector<int> > &recursiveNetFile){
+	vector<int> netsToCheck;
+	for(int i=2; i<recursiveNetFile[position].size(); i++){
+		netsToCheck.push_back(recursiveNetFile[position][i]);
+	}
+
+	
+	cout << endl;
+	float matrixValue=0;
+
+	for(int i=0; i<netsToCheck.size(); i++){
+		matrixValue += (newP[netsToCheck[i]-1] - 1)*newWeights[netsToCheck[i]-1];
+	}
+
+	netsToCheck.clear();
+
+	return matrixValue;
+}
+
+float Objects::setRecursiveRestofMatrix(int block_ID, int column, vector<float> &newWeights, vector<vector<int> > &recursiveNetFile){
+	
+	float matrixValue = 0;
+	vector<int> netsToCheck;
+	vector<int> netsCompare;
+	for(int i=2; i<recursiveNetFile[block_ID].size(); i++){
+		netsToCheck.push_back(recursiveNetFile[block_ID][i]);
+	}
+
+	// for(int i=0; i<netsToCheck.size(); i++){
+	// 	cout << netsToCheck[i] << " ";
+	// }
+	// cout << endl;
+
+	for(int i=2; i<recursiveNetFile[column].size(); i++){
+		netsCompare.push_back(recursiveNetFile[column][i]);
+	}
+
+	// for(int i=0; i<netsCompare.size(); i++){
+	// 	cout << netsCompare[i] << " ";
+	// }
+	// cout << endl;
+
+	for(int i=0; i<netsToCheck.size(); i++){
+		for(int j=0; j<netsCompare.size(); j++){
+			if(netsToCheck[i] == netsCompare[j])
+				matrixValue += newWeights[netsToCheck[i]-1];
+		}
+	}
+	if(matrixValue)
+		matrixValue = (-1)*matrixValue;
+	//cout <<"Matrixval: " << matrixValue << endl;
+	netsCompare.clear();
+	netsToCheck.clear();
+	return matrixValue;
+}
+
+// void Objects::setRecursiveBX(vector<vector<int> > &recursiveNetFile, vector<vector<float> > &newFixedBlocks, vector<float> &newWeights){
+// 	int size = recursiveNetFile.size() - newFixedBlocks.size();
+// 	vector<float> recursiveBX(size, 0);
+
+// 	vector<int> netsToCheck;
+// 	vector<int> netsCompare;
+// 	float xPosition, matrixValue=0;
+// 	int stopValue = (int)newFixedBlocks[0][0];
+// 	for(int i=newFixedBlocks.size()-1; i<recursiveNetFile.size(); i++){
+// 		for(int j=2; j<recursiveNetFile[i].size(); j++)
+// 			netsToCheck.push_back(recursiveNetFile[i][j]);
+
+// 		for(int j=0; j<newFixedBlocks.size(); j++){
+// 			int row = newFixedBlocks[j][0] - 1;
+// 			for(int k=2; k<recursiveNetFile[j].size(); k++)
+// 				netsCompare.push_back(recursiveNetFile[row][k]);
+
+// 			xPosition = newFixedBlocks[j][1];
+// 			for(int k=0; k<netsToCheck.size(); k++){
+// 				for(int l=0; l<netsCompare.size(); l++){
+// 					if(netsToCheck[k] == netsCompare[l]){
+// 						matrixValue += newWeights[netsCompare[l] -1]*xPosition;
+// 					}
+// 				}
+// 			}
+			
+// 			netsCompare.clear();
+
+// 		}
+		
+// 		recursiveBX[i-newFixedBlocks.size()-1] = matrixValue;
+// 		matrixValue = 0;
+// 		netsToCheck.clear();
+// 	}
+
+// 	for(int i=0; i<recursiveBX.size(); i++){
+// 		cout << recursiveBX[i] << " ";
+// 	}
+// 	cout << endl;
+// }
+
 
 #endif
 
