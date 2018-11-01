@@ -1,8 +1,15 @@
 #ifndef __CLASSES_INCLUDED__
 #define __CLASSES_INCLUDED__
 #include "umfpack.h"
+#include "graphics.h"
 #include <math.h>
 using namespace std;
+
+// static bool rubber_band_on = false;
+// static bool have_entered_line, have_rubber_line;
+// static bool line_entering_demo = false;
+// //static float x1, y1, x2, y2;  
+// static int num_new_button_clicks = 0;
 
 class Objects{
 private:
@@ -55,6 +62,9 @@ public:
 		float N = ceil(sqrt(m));
 		this -> N = N;
 	}
+	float returnN(){return N;}
+	vector<float> getxPositions(){return xPositions;}
+	vector<float> getyPositions(){return yPositions;}
 
 //Each net with all blocks it contains
 	void establishNetlist(int size);
@@ -84,17 +94,136 @@ public:
 	void HPWL();
 	void overlapRemoval(int cut, float centerx, float centery, vector<int> &blocks);
 
+	// void drawGrid();
+	// void delay (void);
+	// void drawscreen (void);
+	// void act_on_new_button_func (void (*drawscreen_ptr) (void));
+	// void act_on_button_press (float x, float y);
+	// void act_on_mouse_move (float x, float y);
+	// void act_on_key_press (char c);
+
 //For each step
 	void runStep1();
+	void snap1();
+	void snap2();
 
 //Recursion
 	void recursiveNetlist(vector<int> &blocks, float centerx, float centery);
-	vector<vector<float> > setRecursiveMatrix(int size, vector<float> &newP, vector<float> &newWeights, vector<vector<int> > &recursiveNetFile);
+	vector<vector<float> > setRecursiveMatrix(int size, int size2, vector<float> &newP, vector<float> &newWeights, vector<vector<int> > &recursiveNetFile);
 	float setRecursiveMatrixDiagonal(int position, vector<float> &newP, vector<float> &newWeights, vector<vector<int> > &recursiveNetFile);
 	float setRecursiveRestofMatrix(int block_ID, int column, vector<float> &newWeights, vector<vector<int> > &recursiveNetFile);
 	vector<float> setRecursiveBX(vector<vector<int> > &recursiveNetFile, vector<vector<float> > &newFixedBlocks, vector<float> &newWeights);
 	vector<float> setRecursiveBY(vector<vector<int> > &recursiveNetFile, vector<vector<float> > &newFixedBlocks, vector<float> &newWeights);
+	vector<float> getrecursiveEdges(vector<int> &blocks, vector<float> &newP);
+	vector<float> getrecursiveP(vector<vector<int> > &recNets, vector<int> &blocks);
+	vector<vector<int> > recursiveNetsBtwnBlocks(vector<vector<int> > &recursiveNetFile, int firstnet);
 };
+
+// void Objects::drawGrid(){
+// 	printf ("About to start graphics.\n");
+// 	init_graphics("Some Example Graphics", WHITE);
+
+// 	/* still picture drawing allows user to zoom, etc. */
+// 	// Set-up coordinates from (xl,ytop) = (0,0) to 
+// 	// (xr,ybot) = (1000,1000)
+// 	init_world (0.,0.,1000.,1000.);
+// 	update_message("Interactive graphics example.");
+
+// 	// Pass control to the window handling routine.  It will watch for user input
+// 	// and redraw the screen / pan / zoom / etc. the graphics in response to user
+// 	// input or windows being moved around the screen.  This is done by calling the
+// 	// four callbacks below.  mouse movement and key press (keyboard) events aren't 
+// 	// enabled by default, so they aren't on yet.
+// 	//event_loop(act_on_button_press, NULL, NULL, drawscreen);   
+
+// 	/* animation section */
+// 	clearscreen();
+// 	update_message("Non-interactive (animation) graphics example.");
+// 	setcolor (RED);
+// 	setlinewidth(1);
+// 	setlinestyle (DASHED);
+// 	init_world (0.,0.,1000.,1000.);
+// 	for (int i=0; i<50; i++) {
+// 	  drawline ((float)i,(float)(10.*i),(float)(i+500.),(float)(10.*i+10.));
+// 	  flushinput();
+// 	  delay(); 
+// 	}
+
+//    /* Draw an interactive still picture again.  I'm also creating one new button. */
+
+// 	init_world (0.,0.,1000.,1000.);
+// 	update_message("Interactive graphics #2. Click in graphics area to rubber band line.");
+// 	//create_button ("Window", "0 Clicks", act_on_new_button_func);
+
+// 	// Enable mouse movement (not just button presses) and key board input.
+// 	// The appropriate callbacks will be called by event_loop.
+// 	set_keypress_input (true);
+// 	set_mouse_move_input (true);
+//    //makeline_entering_demo = true;
+
+//    // draw the screen once before calling event loop, so the picture is correct 
+//    // before we get user input.
+// 	drawscreen(); 
+// 	event_loop(NULL, NULL, NULL, drawscreen);
+	
+// }
+
+// void Objects::drawscreen(void){
+// 	set_draw_mode (DRAW_NORMAL);  // Should set this if your program does any XOR drawing in callbacks.
+// 	clearscreen();  /* Should precede drawing for all drawscreens */
+
+// 	int Num=5;
+// 	float bound = N*100.;
+// 	float div = bound/N;
+// 	float center = div/2;
+
+// 	setfontsize (10);
+// 	setlinestyle (SOLID);
+// 	setlinewidth (1);
+// 	setcolor (BLACK);
+// 	drawrect (0,0,bound,bound);
+// 	for(int i=0; i<N; i++){
+// 	  drawline (i*div, 0, i*div, bound);
+// 	  drawline (0, i*div, bound, i*div);
+// 	}
+// 	setcolor(BLUE);
+// 	//fillarc (center,center,20.,0.,360.);
+
+// 	//float positions[5][2] = {{4.5, 0.5},{0.5, 0.5},{4.5, 4.5},{0.5, 4.5},{4.5, 2.5}};
+
+// 	for(int i=0;i<xPositions.size();i++){
+// 	  fillarc (xPositions[i]*100,yPositions[i]*100,20.,0.,360.);
+// 	}
+// }
+
+// void Objects::delay (void) {
+
+// /* A simple delay routine for animation. */
+
+//    int i, j, k, sum;
+
+//    sum = 0;
+//    for (i=0;i<100;i++) 
+//       for (j=0;j<i;j++)
+//          for (k=0;k<1000;k++) 
+//             sum = sum + i+j-k; 
+// }
+
+
+// void Objects::act_on_new_button_func (void (*drawscreen_ptr) (void)) {
+
+//    char old_button_name[200], new_button_name[200];
+//    printf ("You pressed the new button!\n");
+//    setcolor (MAGENTA);
+//    setfontsize (12);
+//    drawtext (500., 500., "You pressed the new button!", 10000.);
+//    sprintf (old_button_name, "%d Clicks", num_new_button_clicks);
+//    num_new_button_clicks++;
+//    sprintf (new_button_name, "%d Clicks", num_new_button_clicks);
+//    change_button_text (old_button_name, new_button_name);
+// }
+
+
 
 void Objects::runStep1(){
 	getN();
@@ -105,6 +234,62 @@ void Objects::runStep1(){
 	UMFPACKIO();
 	computeLocation();
 	HPWL();
+	//snap1();
+	//drawGrid();
+}
+
+void Objects::snap1(){
+
+	vector<vector<int> > gridspace(N,vector<int>(N,0));
+	float xValue, yValue;
+	float val2snap=0, differenceMin=0, differenceCurrent;
+
+	for(int i=0; i<gridspace.size(); i++){
+		for(int j=0; j<gridspace.size(); j++){
+			xValue = i+0.5;
+			yValue = j+0.5;
+
+			for(int k=0; k<xPositions.size(); k++){
+				differenceCurrent = (yPositions[k]-yValue)/(xPositions[k]-xValue);
+				if(differenceCurrent<0)
+					differenceCurrent *= -1;
+				
+				if(val2snap == 0 && differenceMin == 0){
+					if(xPositions[k] > 0 && yPositions[k]>0){
+						differenceMin = differenceCurrent;
+						val2snap = k + 1;
+					}
+					else if(k==xPositions.size()-1)
+						goto end;
+				}
+				else if(differenceCurrent < differenceMin){
+					if(xPositions[k] > 0 && yPositions[k]>0){
+						differenceMin = differenceCurrent;
+						val2snap = k + 1;
+					}
+					
+				}
+			}
+
+			gridspace[i][j] = val2snap;
+			xPositions[val2snap-1] *= -1;
+			yPositions[val2snap-1] *= -1;
+			val2snap = 0;
+			differenceMin = 0;
+		}
+	}
+
+	end:
+	for(int i=0; i<gridspace.size(); i++){
+		for(int j=0; j<gridspace.size(); j++){
+			cout << gridspace[i][j] << " ";
+		}
+		cout << endl;
+	}
+}
+
+void Objects::snap2(){
+	vector<vector<int> > gridspace(N,vector<int>(N,0));
 }
 
 void Objects::establishNetlist(int size){
@@ -649,6 +834,21 @@ void Objects::overlapRemoval(int cut, float centerx, float centery, vector<int> 
 	vector<int> blocksUpperLeft;
 	vector<int> blocksUpperRight;
 
+	// for(int i=fixed.size()-1; i>=0; i--){
+	// 	if(fixed[i][1]>medianx){
+	// 		if(fixed[i][2]>mediany)
+	// 			blocksUpperRight.push_back(fixed[i][0]-1);
+	// 		else
+	// 			blocksLowerRight.push_back(fixed[i][0]-1);
+	// 	}
+	// 	else{
+	// 		if(fixed[i][2]>mediany)
+	// 			blocksUpperLeft.push_back(fixed[i][0]-1);
+	// 		else
+	// 			blocksLowerLeft.push_back(fixed[i][0]-1);
+	// 	}
+	// }
+
 	for(int i=0; i<update_positions_x.size(); i++){
 		if(update_positions_x[i] > medianx){
 			if(update_positions_y[i] > mediany)
@@ -704,12 +904,13 @@ void Objects::recursiveNetlist(vector<int> &blocks, float centerx, float centery
 	}
 
 	for(int i=0; i<blocks.size(); i++){
-		recursiveNetFile.push_back(netsFile[blocks[i]-1]);
+		recursiveNetFile.push_back(netsFile[blocks[i]]);
 	}
 
 	for(int i=fixed.size()-1; i>=0; i--){
 		newFixedBlocks.push_back(fixed[i]);
 	}
+	
 
 	newFixed.push_back(netsFile.size() + 1);
 	newFixed.push_back(centerx);
@@ -720,7 +921,7 @@ void Objects::recursiveNetlist(vector<int> &blocks, float centerx, float centery
 	newNet.push_back(netsFile.size() + 1);
 	newNet.push_back(0);
 	int firstnet = netsBtwnBlocks.size();
-	for(int i=fixed.size(); i<recursiveNetFile.size(); i++){
+	for(int i=newFixedBlocks.size()-1; i<recursiveNetFile.size(); i++){
 		recursiveNetFile[i].push_back(firstnet);
 		newNet.push_back(firstnet);
 		firstnet++;
@@ -728,21 +929,17 @@ void Objects::recursiveNetlist(vector<int> &blocks, float centerx, float centery
 	recursiveNetFile.push_back(newNet);
 	newNet.clear();
 
-	for(int i=0; i<edgeWeights.size(); i++){
-		newWeights.push_back(edgeWeights[i]);
-	}
+	vector<vector<int> > recNets = recursiveNetsBtwnBlocks(recursiveNetFile,firstnet);
+	newP = getrecursiveP(recNets, blocks);
+	newWeights = getrecursiveEdges(blocks, newP);
 
-	for(int i=2; i<recursiveNetFile[recursiveNetFile.size()-1].size(); i++){
-		newWeights.push_back(1);
-	}
+	// for(int i=0; i<p.size(); i++){
+	// 	newP.push_back(p[i]);
+	// }
 
-	for(int i=0; i<p.size(); i++){
-		newP.push_back(p[i]);
-	}
-
-	for(int i=2; i<recursiveNetFile[recursiveNetFile.size()-1].size(); i++){
-		newP.push_back(2);
-	}
+	// for(int i=2; i<recursiveNetFile[recursiveNetFile.size()-1].size(); i++){
+	// 	newP.push_back(2);
+	// }
 
 	// vector<int> netsToCheck(maxnet+1,0);
 
@@ -751,22 +948,40 @@ void Objects::recursiveNetlist(vector<int> &blocks, float centerx, float centery
 	// 		netsToCheck[recursiveNetFile[i][j]] += 1;
 	// }
 
-	// for(int i=0; i<newWeights.size(); i++){
-	// 	cout <<"Edge " << i << " weight: " <<  newWeights[i] << endl;
-	// }
-	// cout << endl;
+	for(int i=0; i<newWeights.size(); i++){
+		cout <<"Edge " << i << " weight: " <<  newWeights[i] << endl;
+	}
+	cout << endl;
 
-	// for(int i=0; i<newP.size(); i++){
-	// 	cout <<"P " << i <<": "<<  newP[i] << endl;
-	// }
-	// cout << endl;
-	// for(int i=0; i<recursiveNetFile.size(); i++){
-	// 	for(int j=0; j<recursiveNetFile[i].size(); j++)
-	// 		cout << recursiveNetFile[i][j] << " ";
-	// 	cout << endl;
-	// }
+	for(int i=0; i<newP.size(); i++){
+		cout <<"P " << i <<": "<<  newP[i] << endl;
+	}
+	cout << endl;
+	for(int i=0; i<recursiveNetFile.size(); i++){
+		for(int j=0; j<recursiveNetFile[i].size(); j++)
+			cout << recursiveNetFile[i][j] << " ";
+		cout << endl;
+	}
 
-	vector<vector<float> > Qnew = setRecursiveMatrix(recursiveNetFile.size() - fixed.size() - 1, newP, newWeights,recursiveNetFile);
+	cout << endl;
+
+	for(int i=0; i<newFixedBlocks.size(); i++){
+		for(int j=0; j<newFixedBlocks[i].size(); j++)
+			cout << newFixedBlocks[i][j] << " ";
+		cout << endl;
+	}
+
+	cout << endl;
+
+
+	for(int i=0; i<recNets.size(); i++){
+		cout << "Net " << i << ": ";
+		for(int j=0; j<recNets[i].size(); j++)
+			cout << recNets[i][j] << " ";
+		cout << endl;
+	}
+
+	vector<vector<float> > Qnew = setRecursiveMatrix(recursiveNetFile.size() - newFixedBlocks.size(), newFixedBlocks.size()-1, newP, newWeights,recursiveNetFile);
 
 	vector<float> recursiveBX = setRecursiveBX(recursiveNetFile, newFixedBlocks, newWeights);
 
@@ -849,7 +1064,7 @@ void Objects::recursiveNetlist(vector<int> &blocks, float centerx, float centery
 	// for(int i=0; i<Qnew.size() + 1; i++){
 	// 	cout << Aparr[i] <<" ";
 	// }
-	// cout << endl << endl;
+	cout << endl << endl;
 
 	cout << "Center: (" << centerx <<"," << centery << ") " << endl;
 
@@ -864,7 +1079,7 @@ void Objects::recursiveNetlist(vector<int> &blocks, float centerx, float centery
 	umfpack_di_free_numeric (&Numericx) ;
 	for (i = 0 ; i < n ; i++) printf ("x [%d] = %g\n", i, recresultx[i]) ;
 
-	cout << endl << endl;
+	cout << endl;
 
 	(void) umfpack_di_symbolic (n, n, Aparr, Aiarr, Axarr, &Symbolicy, null, null) ;
 	(void) umfpack_di_numeric (Aparr, Aiarr, Axarr, Symbolicy, &Numericy, null, null) ;
@@ -873,12 +1088,74 @@ void Objects::recursiveNetlist(vector<int> &blocks, float centerx, float centery
 	(void) umfpack_di_solve (UMFPACK_A, Aparr, Aiarr, Axarr, recresulty, BYarr, Numericy, null, null) ;
 	umfpack_di_free_numeric (&Numericy) ;
 	for (i = 0 ; i < n ; i++) printf ("Y [%d] = %g\n", i, recresulty[i]) ;
+
+	for(int i=0; i<blocks.size(); i++){
+		xPositions[blocks[i]] = recresultx[i];
+		yPositions[blocks[i]] = recresulty[i];
+	}
+
+	this -> xPositions = xPositions;
+	this -> yPositions = yPositions;
+
+	delete [] Aparr;
+	delete [] Aiarr;
+	delete [] Axarr;
+	delete [] BXarr;
+	delete [] BYarr;
+	delete [] recresultx;
+	delete [] recresulty;
+
+	recursiveNetFile.clear();
+	newFixedBlocks.clear();
+	newFixed.clear();
+	newNet.clear();
+	newWeights.clear();
+	newP.clear();
+	Qnew.clear();
+	recursiveBX.clear();
+	recursiveBY.clear();
 }
 
-vector<vector<float> > Objects::setRecursiveMatrix(int size, vector<float> &newP, vector<float> &newWeights, vector<vector<int> > &recursiveNetFile){
+vector<vector<int> > Objects::recursiveNetsBtwnBlocks(vector<vector<int> > &recursiveNetFile, int firstnet){
+	vector<vector<int> > recNets(firstnet, vector<int>());
+	for(int i=0; i<recursiveNetFile.size(); i++){
+		int block_ID = recursiveNetFile[i][0];
+		for(int j=2; j<recursiveNetFile[i].size(); j++){
+			//cout << "Net: " << recursiveNetFile[i][j] << endl;
+			recNets[recursiveNetFile[i][j]].push_back(block_ID);
+		}
+		//cout << endl;
+	}
+	return recNets;
+}
+
+vector<float> Objects::getrecursiveP(vector<vector<int> > &recNets, vector<int> &blocks){
+	vector<float> newP(recNets.size(),0);
+	for(int i=0; i<newP.size(); i++){
+		if(recNets[i].size() > 1)
+			newP[i] = recNets[i].size();
+	}
+
+	return newP;
+}
+
+vector<float> Objects::getrecursiveEdges(vector<int> &blocks, vector<float> &newP){
+	vector<float> newWeights(newP.size(),0);
+	for(int i=0; i<newWeights.size(); i++){
+		if(newP[i]!=0){
+			newWeights[i] = 2/newP[i];
+
+		}
+		if(i>netsBtwnBlocks.size()){
+			newWeights[i] *= 20;
+		}
+	}
+
+	return newWeights;
+}
+
+vector<vector<float> > Objects::setRecursiveMatrix(int size, int size2, vector<float> &newP, vector<float> &newWeights, vector<vector<int> > &recursiveNetFile){
 	vector<vector<float> > Qnew(size, vector<float>(size, 0));
-	int size2 = fixed.size();
-	
 	for(int i=0; i<Qnew.size(); i++){
 		for(int j=0; j<Qnew.size(); j++){
 			if(j!=i){
@@ -892,14 +1169,14 @@ vector<vector<float> > Objects::setRecursiveMatrix(int size, vector<float> &newP
 		}
 	}
 
-	return Qnew;
+	for(int i=0; i<Qnew.size(); i++){
+		for(int j=0; j<Qnew.size(); j++){
+			cout << Qnew[i][j] << endl;
+		}
+		cout << endl;
+	}
 
-	// for(int i=0; i<Qnew.size(); i++){
-	// 	for(int j=0; j<Qnew.size(); j++){
-	// 		cout << Qnew[i][j] << endl;
-	// 	}
-	// 	cout << endl;
-	// }
+	return Qnew;
 }
 
 float Objects::setRecursiveMatrixDiagonal(int position, vector<float> &newP, vector<float> &newWeights, vector<vector<int> > &recursiveNetFile){
@@ -911,7 +1188,7 @@ float Objects::setRecursiveMatrixDiagonal(int position, vector<float> &newP, vec
 	float matrixValue=0;
 
 	for(int i=0; i<netsToCheck.size(); i++){
-		matrixValue += (newP[netsToCheck[i]-1] - 1)*newWeights[netsToCheck[i]-1];
+		matrixValue += (newP[netsToCheck[i]] - 1)*newWeights[netsToCheck[i]];
 	}
 
 	netsToCheck.clear();
@@ -945,7 +1222,7 @@ float Objects::setRecursiveRestofMatrix(int block_ID, int column, vector<float> 
 	for(int i=0; i<netsToCheck.size(); i++){
 		for(int j=0; j<netsCompare.size(); j++){
 			if(netsToCheck[i] == netsCompare[j])
-				matrixValue += newWeights[netsToCheck[i]-1];
+				matrixValue += newWeights[netsToCheck[i]];
 		}
 	}
 	if(matrixValue)
@@ -982,7 +1259,7 @@ vector<float> Objects::setRecursiveBX(vector<vector<int> > &recursiveNetFile, ve
 			for(int k=0; k<netsToCheck.size(); k++){
 				for(int l=0; l<netsCompare.size(); l++){
 					if(netsToCheck[k] == netsCompare[l]){
-						matrixValue += newWeights[netsCompare[l] -1]*xPosition;
+						matrixValue += newWeights[netsCompare[l]]*xPosition;
 					}
 
 				}
@@ -995,12 +1272,14 @@ vector<float> Objects::setRecursiveBX(vector<vector<int> > &recursiveNetFile, ve
 		netsToCheck.clear();
 	}
 
+	
+	cout << "BX: " << endl;
+	for(int i=0; i<recursiveBX.size(); i++){
+		cout << recursiveBX[i] << " ";
+	}
+	cout << endl << endl;
+
 	return recursiveBX;
-	// cout << "BX: " << endl;
-	// for(int i=0; i<recursiveBX.size(); i++){
-	// 	cout << recursiveBX[i] << " ";
-	// }
-	// cout << endl << endl;
 }
 
 vector<float> Objects::setRecursiveBY(vector<vector<int> > &recursiveNetFile, vector<vector<float> > &newFixedBlocks, vector<float> &newWeights){
@@ -1029,7 +1308,7 @@ vector<float> Objects::setRecursiveBY(vector<vector<int> > &recursiveNetFile, ve
 			for(int k=0; k<netsToCheck.size(); k++){
 				for(int l=0; l<netsCompare.size(); l++){
 					if(netsToCheck[k] == netsCompare[l]){
-						matrixValue += newWeights[netsCompare[l] -1]*yPosition;
+						matrixValue += newWeights[netsCompare[l]]*yPosition;
 					}
 				}
 			}
@@ -1044,11 +1323,11 @@ vector<float> Objects::setRecursiveBY(vector<vector<int> > &recursiveNetFile, ve
 	return recursiveBY;
 
 
-	// cout << "BY: " << endl;
-	// for(int i=0; i<recursiveBY.size(); i++){
-	// 	cout << recursiveBY[i] << " ";
-	// }
-	// cout << endl;
+	cout << "BY: " << endl;
+	for(int i=0; i<recursiveBY.size(); i++){
+		cout << recursiveBY[i] << " ";
+	}
+	cout << endl;
 }
 
 
