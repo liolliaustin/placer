@@ -1,4 +1,5 @@
 #include <fstream>
+#include <sstream>
 #include <stdio.h>
 #include <string>
 #include <string.h>
@@ -14,13 +15,17 @@ using namespace std;
 
 void delay (void);
 void drawscreen (void);
+void doSomething(void (*drawscreen_ptr) (void));
 void act_on_new_button_func (void (*drawscreen_ptr) (void));
+// void functionToCall(class Objects net);
 void act_on_button_press (float x, float y);
 void act_on_mouse_move (float x, float y);
 void act_on_key_press (char c);
 
 vector<float> xPos;
 vector<float> yPos;
+vector<vector<int> > netSet;
+vector<vector<int> > Edges;
 float Num;
 
 // For example showing entering lines and rubber banding
@@ -112,47 +117,21 @@ int main(int argc, char * argv[]) {
 	Utils * ut = new Utils(net);
 	ut->get_configuration(argv[1]);
 
-	//Graphics graph(net);
-
-	// for(int i=0; i<net.blocksAmount(); i++){
-	// 	vector<int> current = net.getNextNet(i);
-	// 	for(int j=0; j<current.size(); j++){
-	// 		cout << current[j] << " ";
-	// 	}
-	// 	cout << endl;
-	// }
-	// for(int i=0; i<net.fixedAmount(); i++){
-	// 	vector<float> current = net.getFixedObject(i);
-	// 	for(int j=0; j<current.size(); j++){
-	// 		cout << current[j] << " ";
-	// 	}
-	// 	cout << endl;
-	// }
-	// cout << "The amount of blocks are: " << net.blocksAmount() << endl;
-
-	// int maxnet = net.getMaxNet();
-	// cout << endl << "The Largest Net is: " << maxnet;
-	// cout << endl;
-	// net.getN();
-	// net.establishNetlist();
-	// net.createClique();
-	// net.defineMatrix();
-	// net.defineBforX();
-	// net.defineBforY();
-	// net.UMFPACKIO();
-	// net.computeLocation();
-	// net.HPWL();
 	net.runStep1();
+	net.runStep2();
+	net.snap1();
 	xPos = net.getxPositions();
 	yPos = net.getyPositions();
 	Num = net.returnN();
+	netSet = net.getNetSet();
+	// Edges = net.createEdges();
 	printf ("About to start graphics.\n");
-	init_graphics("Some Example Graphics", WHITE);
+	init_graphics("Placer Graphics", WHITE);
 
 	/* still picture drawing allows user to zoom, etc. */
 	// Set-up coordinates from (xl,ytop) = (0,0) to 
 	// (xr,ybot) = (1000,1000)
-	init_world (0.,0.,1000.,1000.);
+	init_world (0.,0.,5000.,5000.);
 	update_message("Interactive graphics example.");
 
 	// Pass control to the window handling routine.  It will watch for user input
@@ -168,7 +147,7 @@ int main(int argc, char * argv[]) {
 	setcolor (RED);
 	setlinewidth(1);
 	setlinestyle (DASHED);
-	init_world (0.,0.,Num*100,Num*100);
+	init_world (-Num*10.,-Num*10.,Num*100.+Num*10.,Num*100.+Num*10.);
 	for (int i=0; i<50; i++) {
 	  drawline ((float)i,(float)(10.*i),(float)(i+500.),(float)(10.*i+10.));
 	  flushinput();
@@ -177,9 +156,10 @@ int main(int argc, char * argv[]) {
 
 	/* Draw an interactive still picture again.  I'm also creating one new button. */
 
-	init_world (0.,0.,1000.,1000.);
+	init_world (-Num*10.,-Num*10.,Num*100.+Num*10.,Num*100.+Num*10.);
 	update_message("Interactive graphics #2. Click in graphics area to rubber band line.");
-	create_button ("Window", "0 Clicks", act_on_new_button_func);
+	create_button ("Window", "Iteration", act_on_new_button_func);
+	create_button ("Iteration", "Snap", doSomething);
 
 	// Enable mouse movement (not just button presses) and key board input.
 	// The appropriate callbacks will be called by event_loop.
@@ -192,11 +172,13 @@ int main(int argc, char * argv[]) {
 	drawscreen(); 
 	event_loop(act_on_button_press, act_on_mouse_move, act_on_key_press, drawscreen);
 
-	close_graphics ();
+	
 
 	//drawGrid(net.getxPositions(), net.getyPositions(), net.returnN());
+	// Step2:
+	// net.runStep2();
 
-
+	close_graphics ();
 
 	return 0;
 }
@@ -214,25 +196,35 @@ void drawscreen (void) {
 	float div = bound/Num;
 	float center = div/2;
 
-	setfontsize (10);
+	setfontsize (3);
 	setlinestyle (SOLID);
-	setlinewidth (1);
+	setlinewidth (3);
 	setcolor (BLACK);
 	drawrect (0,0,bound,bound);
+	setlinewidth (1);
 	for(int i=0; i<Num; i++){
 	  drawline (i*div, 0, i*div, bound);
 	  drawline (0, i*div, bound, i*div);
 	}
-	setcolor(BLUE);
-	//fillarc (center,center,20.,0.,360.);
+	
+	// setcolor(LIGHTGREY);
+	// for(int i=0; i<Edges.size(); i++){
+	// 	drawline(xPos[Edges[i][0]],xPos[Edges[i][1]],yPos[Edges[i][0]],yPos[Edges[i][1]]);
+	// }
 
-	//float positions[5][2] = {{4.5, 0.5},{0.5, 0.5},{4.5, 4.5},{0.5, 4.5},{4.5, 2.5}};
 
+	const char * message;
 	for(int i=0;i<xPos.size();i++){
-		cout << i <<": " << xPos[i] <<", " << yPos[i] << endl;
-		fillarc (xPos[i]*100,yPos[i]*100,20.,0.,360.);
-		// fillarc (positions[i][0]*100,positions[i][1]*100,20.,0.,360.);
-
+		
+		setcolor(RED);
+		fillarc (xPos[i]*100,yPos[i]*100,30.,0.,360.);
+		setcolor(BLACK);
+		stringstream strs;
+		strs << i+1;
+		string temp_str = strs.str();
+		char const* pchar = temp_str.c_str();
+		drawtext (xPos[i]*100,yPos[i]*100, pchar, 150.);
+	
 	}
 }
 
@@ -252,18 +244,16 @@ void delay (void) {
 
 
 void act_on_new_button_func (void (*drawscreen_ptr) (void)) {
-
-   char old_button_name[200], new_button_name[200];
-   printf ("You pressed the new button!\n");
-   setcolor (MAGENTA);
-   setfontsize (12);
-   drawtext (500., 500., "You pressed the new button!", 10000.);
-   sprintf (old_button_name, "%d Clicks", num_new_button_clicks);
-   num_new_button_clicks++;
-   sprintf (new_button_name, "%d Clicks", num_new_button_clicks);
-   change_button_text (old_button_name, new_button_name);
+	delay();
 }
 
+// void functionToCall(class Objects net){
+// 	net.runStep2();
+// }
+
+void doSomething (void (*drawscreen_ptr) (void)) {
+	cout << "Damn" << endl;
+}
 
 void act_on_button_press (float x, float y) {
 

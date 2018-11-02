@@ -1,0 +1,614 @@
+%!PS-Adobe-1.0
+%%DocumentFonts: Helvetica
+%%Pages: 1
+%%HiResBoundingBox: 36.00 236.74 576.00 540.26
+%%EndComments
+/censhow   %draw a centered string
+ { moveto               % move to proper spot
+   dup stringwidth pop  % get x length of string
+   -2 div               % Proper left start
+   yoff rmoveto         % Move left that much and down half font height
+   show newpath } def   % show the string
+
+/setfontsize     % set font to desired size and compute centering yoff
+ { /Helvetica findfont
+   exch scalefont
+   setfont         % Font size set ...
+
+   0 0 moveto      % Get vertical centering offset
+   (Xg) true charpath
+   flattenpath pathbbox
+   /ascent exch def pop -1 mul /descent exch def pop
+   newpath
+   descent ascent sub 2 div /yoff exch def } def
+
+% Next two lines for debugging only.
+/str 20 string def
+/pnum {str cvs print (  ) print} def
+/drawline      % draw a line from (x2,y2) to (x1,y1)
+ { moveto lineto stroke } def
+
+/rect          % outline a rectangle 
+ { /y2 exch def /x2 exch def /y1 exch def /x1 exch def
+   x1 y1 moveto
+   x2 y1 lineto
+   x2 y2 lineto
+   x1 y2 lineto
+   closepath } def
+
+/drawrect      % draw outline of a rectanagle
+ { rect stroke } def
+
+/fillrect      % fill in a rectanagle
+ { rect fill } def
+
+/drawarc { arc stroke } def           % draw an arc
+/drawarcn { arcn stroke } def         % draw an arc in the opposite direction
+
+%Fill a counterclockwise or clockwise arc sector, respectively.
+/fillarc { moveto currentpoint 5 2 roll arc closepath fill } def
+/fillarcn { moveto currentpoint 5 2 roll arcn closepath fill } def
+
+/fillpoly { 3 1 roll moveto         % move to first point
+   2 exch 1 exch {pop lineto} for   % line to all other points
+   closepath fill } def
+
+%Color Definitions:
+/white { 1 setgray } def
+/black { 0 setgray } def
+/grey55 { .55 setgray } def
+/grey75 { .75 setgray } def
+/blue { 0 0 1 setrgbcolor } def
+/green { 0 1 0 setrgbcolor } def
+/yellow { 1 1 0 setrgbcolor } def
+/cyan { 0 1 1 setrgbcolor } def
+/red { 1 0 0 setrgbcolor } def
+/darkgreen { 0 0.5 0 setrgbcolor } def
+/magenta { 1 0 1 setrgbcolor } def
+
+%Solid and dashed line definitions:
+/linesolid {[] 0 setdash} def
+/linedashed {[3 3] 0 setdash} def
+
+%%EndProlog
+%%Page: 1 1
+
+blue
+linesolid
+1 setlinewidth
+10 setfontsize
+black
+(Interactive graphics example.) 306.00 243.74 censhow
+blue
+36.00 251.74 576.00 540.26 rect clip newpath
+
+white
+clippath fill
+
+blue
+black
+203.17 498.83 408.83 293.17 drawrect
+203.17 498.83 203.17 293.17 drawline
+203.17 498.83 408.83 498.83 drawline
+223.74 498.83 223.74 293.17 drawline
+203.17 478.26 408.83 478.26 drawline
+244.30 498.83 244.30 293.17 drawline
+203.17 457.70 408.83 457.70 drawline
+264.87 498.83 264.87 293.17 drawline
+203.17 437.13 408.83 437.13 drawline
+285.43 498.83 285.43 293.17 drawline
+203.17 416.57 408.83 416.57 drawline
+306.00 498.83 306.00 293.17 drawline
+203.17 396.00 408.83 396.00 drawline
+326.57 498.83 326.57 293.17 drawline
+203.17 375.43 408.83 375.43 drawline
+347.13 498.83 347.13 293.17 drawline
+203.17 354.87 408.83 354.87 drawline
+367.70 498.83 367.70 293.17 drawline
+203.17 334.30 408.83 334.30 drawline
+388.26 498.83 388.26 293.17 drawline
+203.17 313.74 408.83 313.74 drawline
+blue
+gsave
+398.55 324.02 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+398.55 344.58 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+398.55 385.72 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+398.55 447.42 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+398.55 303.45 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+254.58 303.45 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+234.02 303.45 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+213.45 303.45 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+213.45 344.58 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+213.45 385.72 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+213.45 447.42 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+398.55 488.55 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+316.28 488.55 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+254.58 488.55 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+213.45 488.55 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+295.72 426.85 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+377.98 426.85 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+213.45 324.02 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+357.42 324.02 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+357.42 406.28 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+336.85 344.58 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+398.55 426.85 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+254.58 467.98 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+357.42 385.72 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+254.58 344.58 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+377.98 365.15 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+213.45 365.15 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+377.98 344.58 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+398.55 467.98 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+316.28 406.28 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+398.55 406.28 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+275.15 447.42 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+336.85 406.28 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+357.42 303.45 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+357.42 365.15 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+377.98 447.42 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+336.85 303.45 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+254.58 385.72 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+336.85 365.15 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+336.85 324.02 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+234.02 365.15 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+295.72 385.72 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+316.28 344.58 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+377.98 488.55 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+275.15 303.45 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+234.02 406.28 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+234.02 447.42 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+213.45 467.98 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+316.28 426.85 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+275.15 385.72 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+295.72 488.55 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+357.42 447.42 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+234.02 426.85 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+275.15 467.98 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+377.98 303.45 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+234.02 344.58 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+336.85 426.85 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+316.28 385.72 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+275.15 406.28 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+254.58 426.85 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+357.42 488.55 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+275.15 488.55 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+336.85 467.98 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+357.42 426.85 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+377.98 406.28 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+213.45 406.28 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+316.28 467.98 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+234.02 385.72 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+275.15 344.58 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+254.58 365.15 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+295.72 406.28 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+254.58 447.42 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+316.28 303.45 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+316.28 365.15 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+295.72 447.42 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+275.15 426.85 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+377.98 385.72 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+336.85 488.55 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+377.98 467.98 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+316.28 447.42 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+377.98 324.02 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+295.72 344.58 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+295.72 303.45 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+357.42 467.98 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+336.85 447.42 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+295.72 467.98 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+234.02 488.55 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+234.02 467.98 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+336.85 385.72 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+254.58 324.02 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+316.28 324.02 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+275.15 324.02 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+275.15 365.15 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+234.02 324.02 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+295.72 365.15 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+357.42 344.58 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+295.72 324.02 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+213.45 426.85 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+398.55 365.15 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+gsave
+254.58 406.28 translate
+1.00 1 scale
+4.11 0.00 360.00 0 0 fillarc
+grestore
+showpage
+
+%%Trailer

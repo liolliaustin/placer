@@ -3,6 +3,7 @@
 #include "umfpack.h"
 #include "graphics.h"
 #include <math.h>
+#include <queue>
 using namespace std;
 
 // static bool rubber_band_on = false;
@@ -17,6 +18,7 @@ private:
 	vector<vector<int> > netsFile;
 	int maxnet = 0; 
 	vector<vector<int> > netsBtwnBlocks;
+	vector<vector<int> > Edges;
 	int block_ID;
 	vector<float> edgeWeights;
 	vector<int> edgeNum;
@@ -27,10 +29,13 @@ private:
 	vector<float> BY;
 	vector<float>xPositions;
 	vector<float>yPositions;
+	vector<int> blockstopass;
+	queue<vector<float> > spreadQueue;
 
 	double *resultx, *resulty;
 	int nz, n;
 	float N;
+	int edgeNumSum;
 	
 
 public:
@@ -82,7 +87,7 @@ public:
 
 //work with clique model
 	void createClique();
-	void createEdges(int iteration, vector<int>& verticies);
+	vector<vector<int> > createEdges();
 	float setMatrixDiagonal(int block_ID);
 	float setRestofMatrix(int block_ID, int column);
 	void outputEdges(int iteration, vector<vector<int> >& Edges);
@@ -92,7 +97,8 @@ public:
 	void UMFPACKIO();
 	void computeLocation();
 	void HPWL();
-	void overlapRemoval(int cut, float centerx, float centery, vector<int> &blocks);
+	void overlapRemoval(int depth, float centerx, float centery, vector<int> &blocks);
+	void executeRecursion(int iteration);
 
 	// void drawGrid();
 	// void delay (void);
@@ -104,6 +110,7 @@ public:
 
 //For each step
 	void runStep1();
+	void runStep2();
 	void snap1();
 	void snap2();
 
@@ -119,112 +126,6 @@ public:
 	vector<vector<int> > recursiveNetsBtwnBlocks(vector<vector<int> > &recursiveNetFile, int firstnet);
 };
 
-// void Objects::drawGrid(){
-// 	printf ("About to start graphics.\n");
-// 	init_graphics("Some Example Graphics", WHITE);
-
-// 	/* still picture drawing allows user to zoom, etc. */
-// 	// Set-up coordinates from (xl,ytop) = (0,0) to 
-// 	// (xr,ybot) = (1000,1000)
-// 	init_world (0.,0.,1000.,1000.);
-// 	update_message("Interactive graphics example.");
-
-// 	// Pass control to the window handling routine.  It will watch for user input
-// 	// and redraw the screen / pan / zoom / etc. the graphics in response to user
-// 	// input or windows being moved around the screen.  This is done by calling the
-// 	// four callbacks below.  mouse movement and key press (keyboard) events aren't 
-// 	// enabled by default, so they aren't on yet.
-// 	//event_loop(act_on_button_press, NULL, NULL, drawscreen);   
-
-// 	/* animation section */
-// 	clearscreen();
-// 	update_message("Non-interactive (animation) graphics example.");
-// 	setcolor (RED);
-// 	setlinewidth(1);
-// 	setlinestyle (DASHED);
-// 	init_world (0.,0.,1000.,1000.);
-// 	for (int i=0; i<50; i++) {
-// 	  drawline ((float)i,(float)(10.*i),(float)(i+500.),(float)(10.*i+10.));
-// 	  flushinput();
-// 	  delay(); 
-// 	}
-
-//    /* Draw an interactive still picture again.  I'm also creating one new button. */
-
-// 	init_world (0.,0.,1000.,1000.);
-// 	update_message("Interactive graphics #2. Click in graphics area to rubber band line.");
-// 	//create_button ("Window", "0 Clicks", act_on_new_button_func);
-
-// 	// Enable mouse movement (not just button presses) and key board input.
-// 	// The appropriate callbacks will be called by event_loop.
-// 	set_keypress_input (true);
-// 	set_mouse_move_input (true);
-//    //makeline_entering_demo = true;
-
-//    // draw the screen once before calling event loop, so the picture is correct 
-//    // before we get user input.
-// 	drawscreen(); 
-// 	event_loop(NULL, NULL, NULL, drawscreen);
-	
-// }
-
-// void Objects::drawscreen(void){
-// 	set_draw_mode (DRAW_NORMAL);  // Should set this if your program does any XOR drawing in callbacks.
-// 	clearscreen();  /* Should precede drawing for all drawscreens */
-
-// 	int Num=5;
-// 	float bound = N*100.;
-// 	float div = bound/N;
-// 	float center = div/2;
-
-// 	setfontsize (10);
-// 	setlinestyle (SOLID);
-// 	setlinewidth (1);
-// 	setcolor (BLACK);
-// 	drawrect (0,0,bound,bound);
-// 	for(int i=0; i<N; i++){
-// 	  drawline (i*div, 0, i*div, bound);
-// 	  drawline (0, i*div, bound, i*div);
-// 	}
-// 	setcolor(BLUE);
-// 	//fillarc (center,center,20.,0.,360.);
-
-// 	//float positions[5][2] = {{4.5, 0.5},{0.5, 0.5},{4.5, 4.5},{0.5, 4.5},{4.5, 2.5}};
-
-// 	for(int i=0;i<xPositions.size();i++){
-// 	  fillarc (xPositions[i]*100,yPositions[i]*100,20.,0.,360.);
-// 	}
-// }
-
-// void Objects::delay (void) {
-
-// /* A simple delay routine for animation. */
-
-//    int i, j, k, sum;
-
-//    sum = 0;
-//    for (i=0;i<100;i++) 
-//       for (j=0;j<i;j++)
-//          for (k=0;k<1000;k++) 
-//             sum = sum + i+j-k; 
-// }
-
-
-// void Objects::act_on_new_button_func (void (*drawscreen_ptr) (void)) {
-
-//    char old_button_name[200], new_button_name[200];
-//    printf ("You pressed the new button!\n");
-//    setcolor (MAGENTA);
-//    setfontsize (12);
-//    drawtext (500., 500., "You pressed the new button!", 10000.);
-//    sprintf (old_button_name, "%d Clicks", num_new_button_clicks);
-//    num_new_button_clicks++;
-//    sprintf (new_button_name, "%d Clicks", num_new_button_clicks);
-//    change_button_text (old_button_name, new_button_name);
-// }
-
-
-
 void Objects::runStep1(){
 	getN();
 	establishNetlist(maxnet+1);
@@ -234,57 +135,75 @@ void Objects::runStep1(){
 	UMFPACKIO();
 	computeLocation();
 	HPWL();
+	
 	//snap1();
-	//drawGrid();
+
 }
 
+void Objects::runStep2(){
+	executeRecursion(1);
+}
+
+//fix for fixed blocks
 void Objects::snap1(){
 
 	vector<vector<int> > gridspace(N,vector<int>(N,0));
 	float xValue, yValue;
 	float val2snap=0, differenceMin=0, differenceCurrent;
 
+	for(int i=0; i< fixed.size(); i++){
+		gridspace[fixed[i][1] - 0.5 ][fixed[i][2] - 0.5] = fixed[i][0];
+	}
+
 	for(int i=0; i<gridspace.size(); i++){
 		for(int j=0; j<gridspace.size(); j++){
-			xValue = i+0.5;
-			yValue = j+0.5;
+			if(gridspace[i][j] == 0){	
+				xValue = i+0.5;
+				yValue = j+0.5;
 
-			for(int k=0; k<xPositions.size(); k++){
-				differenceCurrent = (yPositions[k]-yValue)/(xPositions[k]-xValue);
-				if(differenceCurrent<0)
-					differenceCurrent *= -1;
-				
-				if(val2snap == 0 && differenceMin == 0){
-					if(xPositions[k] > 0 && yPositions[k]>0){
-						differenceMin = differenceCurrent;
-						val2snap = k + 1;
-					}
-					else if(k==xPositions.size()-1)
-						goto end;
-				}
-				else if(differenceCurrent < differenceMin){
-					if(xPositions[k] > 0 && yPositions[k]>0){
-						differenceMin = differenceCurrent;
-						val2snap = k + 1;
-					}
+				for(int k=fixed.size(); k<xPositions.size(); k++){
+					differenceCurrent = (yPositions[k]-yValue)/(xPositions[k]-xValue);
+					if(differenceCurrent<0)
+						differenceCurrent *= -1;
 					
+					if(val2snap == 0 && differenceMin == 0){
+						if(xPositions[k] > 0 && yPositions[k]>0){
+							differenceMin = differenceCurrent;
+							val2snap = k + 1;
+						}
+						else if(k==xPositions.size()-1)
+							goto end;
+					}
+					else if(differenceCurrent < differenceMin){
+						if(xPositions[k] > 0 && yPositions[k]>0){
+							differenceMin = differenceCurrent;
+							val2snap = k + 1;
+						}
+						
+					}
 				}
-			}
 
-			gridspace[i][j] = val2snap;
-			xPositions[val2snap-1] *= -1;
-			yPositions[val2snap-1] *= -1;
-			val2snap = 0;
-			differenceMin = 0;
+				gridspace[i][j] = val2snap;
+				xPositions[val2snap-1] *= -1;
+				yPositions[val2snap-1] *= -1;
+				val2snap = 0;
+				differenceMin = 0;
+			}
 		}
 	}
 
 	end:
+	for(int i=fixed.size(); i<xPositions.size(); i++){
+		xPositions[i] *= -1;
+		yPositions[i] *= -1;
+	}
 	for(int i=0; i<gridspace.size(); i++){
 		for(int j=0; j<gridspace.size(); j++){
-			cout << gridspace[i][j] << " ";
+			if(gridspace[i][j] > fixed.size()){
+				xPositions[gridspace[i][j]-1] = i+0.5;
+				yPositions[gridspace[i][j]-1] = j+0.5;
+			}
 		}
-		cout << endl;
 	}
 }
 
@@ -322,10 +241,12 @@ void Objects::createClique(){
 		edgeWeights.push_back(2/current);
 	}
 
-	// for(int i=0; i<edgeWeights.size(); i++){
-	// 	cout << "Net " << i +1 << " weight: " << edgeWeights[i] << endl;
-	// }
+	int edgeNumSum=0;
+	for(int i=0; i<edgeNum.size(); i++){
+		edgeNumSum += edgeNum[i];
+	}
 	
+	this -> edgeNumSum = edgeNumSum;
 	this -> p = p;
 	this -> edgeNum = edgeNum;
 	this -> edgeWeights = edgeWeights;
@@ -335,33 +256,30 @@ void Objects::createClique(){
 	// }
 }
 
-void Objects::createEdges(int iteration, vector<int>& verticies){
+vector<vector<int> > Objects::createEdges(){
 	int location = 0;
 	int connected = 1;
-	// cout << "verticies: ";
-	// for(int i=0; i<verticies.size(); i++){
-	// 	cout << verticies[i] << " ";
-	// }
-	// cout << endl;
+	
+	vector<vector<int> > Edges(edgeNumSum, vector<int>());
 
-	// cout << "Number of Edges: " << edgeNum[iteration] << endl;
-	// cout << "Number of verticies: " << p[iteration] << endl;
-	// cout << "Edge Weight: " << edgeWeights[iteration] << endl;
-	vector<vector<int> > Edges(edgeNum[iteration], vector<int>());
-	for(int i=0; i<edgeNum[iteration]; i++){
-		Edges[i].push_back(verticies[location]);
-		Edges[i].push_back(verticies[connected]);
-		if(connected == verticies.size() - 1){
-			location++;
-			connected = location + 1;
+	vector<int> verticies;
+	for(int j=0; j<netsBtwnBlocks.size(); j++){
+		verticies = netsBtwnBlocks[j];
+		for(int i=0; i<edgeNum[j]; i++){
+			Edges[i].push_back(verticies[location]);
+			Edges[i].push_back(verticies[connected]);
+			if(connected == verticies.size() - 1){
+				location++;
+				connected = location + 1;
+			}
+			else
+				connected++;
+			
 		}
-		else
-			connected++;
-		
+		verticies.clear();
 	}
 	
-	//outputEdges(iteration, Edges);
-	Edges.clear();
+	return Edges;
 }
 
 void Objects::outputEdges(int iteration, vector<vector<int> >& Edges){
@@ -680,7 +598,7 @@ void Objects::HPWL(){
 	vector<float> xPositions;
 	vector<float> yPositions;
 	vector<float> hpwl;
-	vector<int> blocks;
+	vector<int> blockstopass;
 
 	for(int i=fixed.size()-1; i>=0; i--){
 		xPositions.push_back(fixed[i][1]);
@@ -697,9 +615,11 @@ void Objects::HPWL(){
 
 	for(int i=0; i<xPositions.size(); i++){
 		if(i>=fixed.size())
-			blocks.push_back(i);
+			blockstopass.push_back(i);
 		cout <<"Block " << i << ": = (" << xPositions[i] << "," << yPositions[i] <<")" << endl;
 	}
+
+	this -> blockstopass = blockstopass;
 
 	cout << endl;
 
@@ -756,15 +676,46 @@ void Objects::HPWL(){
 
 	cout << "Total: " << total << endl;
 	cout << "N: " << N << endl;
+	// int depth = 1;
+	// overlapRemoval(depth, N/2, N/2, blockstopass);
+	
 
-	overlapRemoval(1, N/2, N/2, blocks);
+}
+
+void Objects::executeRecursion(int iteration){
+
+	overlapRemoval(iteration, N/2, N/2, blockstopass);
+
+	// int depth = 1;
+	// for(int i=1; i<N; i++){
+	// 	if(i == 1)
+			
+
+	// else{
+	// 	depth++;
+	// 	if((N/depth)>1){
+	// 		overlapRemoval(depth, xl, yl, blocksLowerLeft);
+	// 		overlapRemoval(depth, xr, yl, blocksLowerRight);
+	// 		overlapRemoval(depth, xl, yu, blocksUpperLeft);
+	// 		overlapRemoval(depth, xr, yu, blocksUpperRight);
+	// 	}
+	// }
+
+	// }
+	
 }
 
 //assume blocks stores the actual value of block 1-20
-void Objects::overlapRemoval(int cut, float centerx, float centery, vector<int> &blocks){
+void Objects::overlapRemoval(int depth, float centerx, float centery, vector<int> &blocks){
 	bool filled = false;
-	float xl = cut*centerx/2, xr=cut*3*(centerx/2);
-	float yl = cut*centery/2, yu = cut*3*(centery/2);
+	float xl, xr;
+	float yl, yu;
+
+	xl = centerx - N/(4*depth);
+	xr = centerx + N/(4*depth);
+	yl = centery - N/(4*depth);
+	yu = centery + N/(4*depth);
+
 
 	vector<float> update_positions_x;
 	vector<float> update_positions_y;
@@ -834,21 +785,6 @@ void Objects::overlapRemoval(int cut, float centerx, float centery, vector<int> 
 	vector<int> blocksUpperLeft;
 	vector<int> blocksUpperRight;
 
-	// for(int i=fixed.size()-1; i>=0; i--){
-	// 	if(fixed[i][1]>medianx){
-	// 		if(fixed[i][2]>mediany)
-	// 			blocksUpperRight.push_back(fixed[i][0]-1);
-	// 		else
-	// 			blocksLowerRight.push_back(fixed[i][0]-1);
-	// 	}
-	// 	else{
-	// 		if(fixed[i][2]>mediany)
-	// 			blocksUpperLeft.push_back(fixed[i][0]-1);
-	// 		else
-	// 			blocksLowerLeft.push_back(fixed[i][0]-1);
-	// 	}
-	// }
-
 	for(int i=0; i<update_positions_x.size(); i++){
 		if(update_positions_x[i] > medianx){
 			if(update_positions_y[i] > mediany)
@@ -864,31 +800,75 @@ void Objects::overlapRemoval(int cut, float centerx, float centery, vector<int> 
 		}
 	}
 
-	cout << "Lower Left: " << blocksLowerLeft.size() << endl;
-	for(int i=0; i<blocksLowerLeft.size(); i++){
-		cout << blocksLowerLeft[i] << " ";
-	}
+	// cout << "Lower Left: " << blocksLowerLeft.size() << endl;
+	// for(int i=0; i<blocksLowerLeft.size(); i++){
+	// 	cout << blocksLowerLeft[i] << " ";
+	// }
 
-	cout << endl << "Lower Right:" << blocksLowerRight.size()<< endl;
-	for(int i=0; i<blocksLowerRight.size(); i++){
-		cout << blocksLowerRight[i] << " ";
-	}
+	// cout << endl << "Lower Right:" << blocksLowerRight.size()<< endl;
+	// for(int i=0; i<blocksLowerRight.size(); i++){
+	// 	cout << blocksLowerRight[i] << " ";
+	// }
 
-	cout << endl << "Upper Left: " << blocksUpperLeft.size()<< endl;
-	for(int i=0; i<blocksUpperLeft.size(); i++){
-		cout << blocksUpperLeft[i] << " ";
-	}
+	// cout << endl << "Upper Left: " << blocksUpperLeft.size()<< endl;
+	// for(int i=0; i<blocksUpperLeft.size(); i++){
+	// 	cout << blocksUpperLeft[i] << " ";
+	// }
 
-	cout << endl << "Upper Right: " << blocksUpperRight.size()<< endl;
-	for(int i=0; i<blocksUpperRight.size(); i++){
-		cout << blocksUpperRight[i] << " ";
-	}
+	// cout << endl << "Upper Right: " << blocksUpperRight.size()<< endl;
+	// for(int i=0; i<blocksUpperRight.size(); i++){
+	// 	cout << blocksUpperRight[i] << " ";
+	// }
 
-	cout << endl << endl;
+	// cout << endl << endl;
 	recursiveNetlist(blocksLowerLeft, xl, yl);
 	recursiveNetlist(blocksLowerRight, xr, yl);
 	recursiveNetlist(blocksUpperLeft, xl, yu);
 	recursiveNetlist(blocksUpperRight, xr, yu);
+
+	// blocksLowerLeft.push_back(xl);
+	// blocksLowerLeft.push_back(yl);
+	// blocksLowerRight.push_back(xr);
+	// blocksLowerRight.push_back(yl);
+	// blocksUpperLeft.push_back(xl);
+	// blocksUpperLeft.push_back(yu);
+	// blocksUpperRight.push_back(xr);
+	// blocksUpperRight.push_back(yu);
+
+	// queue<vector<float> > spreadQueue;
+	// // this -> spreadQueue = spreadQueue;
+
+	// spreadQueue.push(blocksLowerLeft);
+	// spreadQueue.push(blocksLowerRight);
+	// spreadQueue.push(blocksUpperLeft);
+	// spreadQueue.push(blocksUpperRight);
+
+	// this -> spreadQueue = spreadQueue;
+
+	if(depth == 1){
+		overlapRemoval(2, xl, yl, blocksLowerLeft);
+		overlapRemoval(2, xr, yl,blocksLowerRight);
+		overlapRemoval(2, xl, yu,blocksUpperLeft);
+		overlapRemoval(2, xr, yu, blocksUpperRight);
+	}
+	else if(depth == 2){
+		overlapRemoval(3, xl, yl, blocksLowerLeft);
+		overlapRemoval(3, xr, yl,blocksLowerRight);
+		overlapRemoval(3, xl, yu,blocksUpperLeft);
+		overlapRemoval(3, xr, yu, blocksUpperRight);
+	}
+	// else if(depth == 3){
+	// 	overlapRemoval(4, xl, yl, blocksLowerLeft);
+	// 	overlapRemoval(4, xr, yl,blocksLowerRight);
+	// 	overlapRemoval(4, xl, yu,blocksUpperLeft);
+	// 	overlapRemoval(4, xr, yu, blocksUpperRight);
+	// }
+	// else if(depth == 4){
+	// 	overlapRemoval(5, xl, yl, blocksLowerLeft);
+	// 	overlapRemoval(5, xr, yl,blocksLowerRight);
+	// 	overlapRemoval(5, xl, yu,blocksUpperLeft);
+	// 	overlapRemoval(5, xr, yu, blocksUpperRight);
+	// }
 }
 
 void Objects::recursiveNetlist(vector<int> &blocks, float centerx, float centery){
@@ -948,38 +928,38 @@ void Objects::recursiveNetlist(vector<int> &blocks, float centerx, float centery
 	// 		netsToCheck[recursiveNetFile[i][j]] += 1;
 	// }
 
-	for(int i=0; i<newWeights.size(); i++){
-		cout <<"Edge " << i << " weight: " <<  newWeights[i] << endl;
-	}
-	cout << endl;
+	// for(int i=0; i<newWeights.size(); i++){
+	// 	cout <<"Edge " << i << " weight: " <<  newWeights[i] << endl;
+	// }
+	// cout << endl;
 
-	for(int i=0; i<newP.size(); i++){
-		cout <<"P " << i <<": "<<  newP[i] << endl;
-	}
-	cout << endl;
-	for(int i=0; i<recursiveNetFile.size(); i++){
-		for(int j=0; j<recursiveNetFile[i].size(); j++)
-			cout << recursiveNetFile[i][j] << " ";
-		cout << endl;
-	}
+	// for(int i=0; i<newP.size(); i++){
+	// 	cout <<"P " << i <<": "<<  newP[i] << endl;
+	// }
+	// cout << endl;
+	// for(int i=0; i<recursiveNetFile.size(); i++){
+	// 	for(int j=0; j<recursiveNetFile[i].size(); j++)
+	// 		cout << recursiveNetFile[i][j] << " ";
+	// 	cout << endl;
+	// }
 
-	cout << endl;
+	// cout << endl;
 
-	for(int i=0; i<newFixedBlocks.size(); i++){
-		for(int j=0; j<newFixedBlocks[i].size(); j++)
-			cout << newFixedBlocks[i][j] << " ";
-		cout << endl;
-	}
+	// for(int i=0; i<newFixedBlocks.size(); i++){
+	// 	for(int j=0; j<newFixedBlocks[i].size(); j++)
+	// 		cout << newFixedBlocks[i][j] << " ";
+	// 	cout << endl;
+	// }
 
-	cout << endl;
+	// cout << endl;
 
 
-	for(int i=0; i<recNets.size(); i++){
-		cout << "Net " << i << ": ";
-		for(int j=0; j<recNets[i].size(); j++)
-			cout << recNets[i][j] << " ";
-		cout << endl;
-	}
+	// for(int i=0; i<recNets.size(); i++){
+	// 	cout << "Net " << i << ": ";
+	// 	for(int j=0; j<recNets[i].size(); j++)
+	// 		cout << recNets[i][j] << " ";
+	// 	cout << endl;
+	// }
 
 	vector<vector<float> > Qnew = setRecursiveMatrix(recursiveNetFile.size() - newFixedBlocks.size(), newFixedBlocks.size()-1, newP, newWeights,recursiveNetFile);
 
@@ -1147,7 +1127,7 @@ vector<float> Objects::getrecursiveEdges(vector<int> &blocks, vector<float> &new
 
 		}
 		if(i>netsBtwnBlocks.size()){
-			newWeights[i] *= 20;
+			newWeights[i] *= 40;
 		}
 	}
 
