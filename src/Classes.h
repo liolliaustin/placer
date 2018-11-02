@@ -12,6 +12,9 @@ using namespace std;
 // //static float x1, y1, x2, y2;  
 // static int num_new_button_clicks = 0;
 
+queue<vector<float> > spreadQueueXY;
+queue<vector<int> > spreadQueueBlocks;
+
 class Objects{
 private:
 	vector<vector<float> > fixed;
@@ -30,7 +33,7 @@ private:
 	vector<float>xPositions;
 	vector<float>yPositions;
 	vector<int> blockstopass;
-	queue<vector<float> > spreadQueue;
+	
 
 	double *resultx, *resulty;
 	int nz, n;
@@ -96,7 +99,7 @@ public:
 	void defineBforY();
 	void UMFPACKIO();
 	void computeLocation();
-	void HPWL();
+	float HPWL();
 	void overlapRemoval(int depth, float centerx, float centery, vector<int> &blocks);
 	void executeRecursion(int iteration);
 
@@ -110,7 +113,7 @@ public:
 
 //For each step
 	void runStep1();
-	void runStep2();
+	void runStep2(int iteration);
 	void snap1();
 	void snap2();
 
@@ -129,19 +132,15 @@ public:
 void Objects::runStep1(){
 	getN();
 	establishNetlist(maxnet+1);
-	outputNBB();
+	//outputNBB();
 	createClique();
 	defineMatrix(netsFile.size(),fixed.size());
 	UMFPACKIO();
 	computeLocation();
-	HPWL();
-	
-	//snap1();
-
 }
 
-void Objects::runStep2(){
-	executeRecursion(1);
+void Objects::runStep2(int iteration){
+	executeRecursion(iteration);
 }
 
 //fix for fixed blocks
@@ -257,27 +256,39 @@ void Objects::createClique(){
 }
 
 vector<vector<int> > Objects::createEdges(){
-	int location = 0;
-	int connected = 1;
 	
+	int k=0;
 	vector<vector<int> > Edges(edgeNumSum, vector<int>());
 
 	vector<int> verticies;
-	for(int j=0; j<netsBtwnBlocks.size(); j++){
+	for(int j=1; j<netsBtwnBlocks.size(); j++){
+		int location = 0;
+		int connected = 1;
 		verticies = netsBtwnBlocks[j];
-		for(int i=0; i<edgeNum[j]; i++){
-			Edges[i].push_back(verticies[location]);
-			Edges[i].push_back(verticies[connected]);
+		for(int i=0; i<edgeNum[j-1]; i++){
+			Edges[k].push_back(verticies[location]);
+			Edges[k].push_back(verticies[connected]);
 			if(connected == verticies.size() - 1){
 				location++;
 				connected = location + 1;
+				k++;
 			}
-			else
+			else{
+				k++;
 				connected++;
+			}
+
 			
 		}
 		verticies.clear();
 	}
+
+	// for(int i=0; i<Edges.size(); i++){
+	// 	for(int j=0; j<Edges[i].size(); j++){
+	// 		cout << Edges[i][j] << " ";
+	// 	}
+	// 	cout << endl;
+	// }
 	
 	return Edges;
 }
@@ -592,12 +603,10 @@ void Objects::computeLocation(){
 	delete [] Axarr;
 	delete [] BXarr;
 	delete [] BYarr;
-}
 
-void Objects::HPWL(){
 	vector<float> xPositions;
 	vector<float> yPositions;
-	vector<float> hpwl;
+	
 	vector<int> blockstopass;
 
 	for(int i=fixed.size()-1; i>=0; i--){
@@ -616,16 +625,16 @@ void Objects::HPWL(){
 	for(int i=0; i<xPositions.size(); i++){
 		if(i>=fixed.size())
 			blockstopass.push_back(i);
-		cout <<"Block " << i << ": = (" << xPositions[i] << "," << yPositions[i] <<")" << endl;
+		//cout <<"Block " << i << ": = (" << xPositions[i] << "," << yPositions[i] <<")" << endl;
 	}
 
 	this -> blockstopass = blockstopass;
 
 	cout << endl;
+}
 
-	// for(int i=0; i<yPositions.size(); i++){
-	// 	cout <<"y[" << i << "] = " << yPositions[i] << endl;
-	// }
+float Objects::HPWL(){
+	vector<float> hpwl;
 
 	float currentBlock, total;
 
@@ -674,34 +683,24 @@ void Objects::HPWL(){
 	for(int i=0; i<hpwl.size(); i++)
 		total += hpwl[i];
 
-	cout << "Total: " << total << endl;
-	cout << "N: " << N << endl;
-	// int depth = 1;
-	// overlapRemoval(depth, N/2, N/2, blockstopass);
+	return total;
 	
-
 }
 
 void Objects::executeRecursion(int iteration){
 
-	overlapRemoval(iteration, N/2, N/2, blockstopass);
+	if(iteration == 1)
+		overlapRemoval(iteration, N/2, N/2, blockstopass);
+	else{
+		for(int i=0; i<(iteration-1)*4; i++){
+			vector<float> vals = spreadQueueXY.front();
+			spreadQueueXY.pop();
+			vector<int> blocks = spreadQueueBlocks.front();
+			spreadQueueBlocks.pop();
+			overlapRemoval(iteration,vals[0],vals[1],blocks);
+		}
 
-	// int depth = 1;
-	// for(int i=1; i<N; i++){
-	// 	if(i == 1)
-			
-
-	// else{
-	// 	depth++;
-	// 	if((N/depth)>1){
-	// 		overlapRemoval(depth, xl, yl, blocksLowerLeft);
-	// 		overlapRemoval(depth, xr, yl, blocksLowerRight);
-	// 		overlapRemoval(depth, xl, yu, blocksUpperLeft);
-	// 		overlapRemoval(depth, xr, yu, blocksUpperRight);
-	// 	}
-	// }
-
-	// }
+	}
 	
 }
 
@@ -826,49 +825,33 @@ void Objects::overlapRemoval(int depth, float centerx, float centery, vector<int
 	recursiveNetlist(blocksUpperLeft, xl, yu);
 	recursiveNetlist(blocksUpperRight, xr, yu);
 
-	// blocksLowerLeft.push_back(xl);
-	// blocksLowerLeft.push_back(yl);
-	// blocksLowerRight.push_back(xr);
-	// blocksLowerRight.push_back(yl);
-	// blocksUpperLeft.push_back(xl);
-	// blocksUpperLeft.push_back(yu);
-	// blocksUpperRight.push_back(xr);
-	// blocksUpperRight.push_back(yu);
 
-	// queue<vector<float> > spreadQueue;
-	// // this -> spreadQueue = spreadQueue;
+	//queue<vector<float> > spreadQueueXY;
+	vector<float> XY;
 
-	// spreadQueue.push(blocksLowerLeft);
-	// spreadQueue.push(blocksLowerRight);
-	// spreadQueue.push(blocksUpperLeft);
-	// spreadQueue.push(blocksUpperRight);
+	XY.push_back(xl);
+	XY.push_back(yl);
+	spreadQueueXY.push(XY);
+	XY.clear();
+	XY.push_back(xr);
+	XY.push_back(yl);
+	spreadQueueXY.push(XY);
+	XY.clear();
+	XY.push_back(xl);
+	XY.push_back(yu);
+	spreadQueueXY.push(XY);
+	XY.clear();
+	XY.push_back(xr);
+	XY.push_back(yu);
+	spreadQueueXY.push(XY);
+	XY.clear();
 
-	// this -> spreadQueue = spreadQueue;
+	spreadQueueBlocks.push(blocksLowerLeft);
+	spreadQueueBlocks.push(blocksLowerRight);
+	spreadQueueBlocks.push(blocksUpperLeft);
+	spreadQueueBlocks.push(blocksUpperRight);
 
-	if(depth == 1){
-		overlapRemoval(2, xl, yl, blocksLowerLeft);
-		overlapRemoval(2, xr, yl,blocksLowerRight);
-		overlapRemoval(2, xl, yu,blocksUpperLeft);
-		overlapRemoval(2, xr, yu, blocksUpperRight);
-	}
-	else if(depth == 2){
-		overlapRemoval(3, xl, yl, blocksLowerLeft);
-		overlapRemoval(3, xr, yl,blocksLowerRight);
-		overlapRemoval(3, xl, yu,blocksUpperLeft);
-		overlapRemoval(3, xr, yu, blocksUpperRight);
-	}
-	// else if(depth == 3){
-	// 	overlapRemoval(4, xl, yl, blocksLowerLeft);
-	// 	overlapRemoval(4, xr, yl,blocksLowerRight);
-	// 	overlapRemoval(4, xl, yu,blocksUpperLeft);
-	// 	overlapRemoval(4, xr, yu, blocksUpperRight);
-	// }
-	// else if(depth == 4){
-	// 	overlapRemoval(5, xl, yl, blocksLowerLeft);
-	// 	overlapRemoval(5, xr, yl,blocksLowerRight);
-	// 	overlapRemoval(5, xl, yu,blocksUpperLeft);
-	// 	overlapRemoval(5, xr, yu, blocksUpperRight);
-	// }
+
 }
 
 void Objects::recursiveNetlist(vector<int> &blocks, float centerx, float centery){
@@ -1044,9 +1027,9 @@ void Objects::recursiveNetlist(vector<int> &blocks, float centerx, float centery
 	// for(int i=0; i<Qnew.size() + 1; i++){
 	// 	cout << Aparr[i] <<" ";
 	// }
-	cout << endl << endl;
+	// cout << endl << endl;
 
-	cout << "Center: (" << centerx <<"," << centery << ") " << endl;
+	// cout << "Center: (" << centerx <<"," << centery << ") " << endl;
 
 	int i ;
 	int n=Qnew.size();
@@ -1057,9 +1040,9 @@ void Objects::recursiveNetlist(vector<int> &blocks, float centerx, float centery
 
 	(void) umfpack_di_solve (UMFPACK_A, Aparr, Aiarr, Axarr, recresultx, BXarr, Numericx, null, null) ;
 	umfpack_di_free_numeric (&Numericx) ;
-	for (i = 0 ; i < n ; i++) printf ("x [%d] = %g\n", i, recresultx[i]) ;
+	//for (i = 0 ; i < n ; i++) printf ("x [%d] = %g\n", i, recresultx[i]) ;
 
-	cout << endl;
+	//cout << endl;
 
 	(void) umfpack_di_symbolic (n, n, Aparr, Aiarr, Axarr, &Symbolicy, null, null) ;
 	(void) umfpack_di_numeric (Aparr, Aiarr, Axarr, Symbolicy, &Numericy, null, null) ;
@@ -1067,7 +1050,7 @@ void Objects::recursiveNetlist(vector<int> &blocks, float centerx, float centery
 
 	(void) umfpack_di_solve (UMFPACK_A, Aparr, Aiarr, Axarr, recresulty, BYarr, Numericy, null, null) ;
 	umfpack_di_free_numeric (&Numericy) ;
-	for (i = 0 ; i < n ; i++) printf ("Y [%d] = %g\n", i, recresulty[i]) ;
+	//for (i = 0 ; i < n ; i++) printf ("Y [%d] = %g\n", i, recresulty[i]) ;
 
 	for(int i=0; i<blocks.size(); i++){
 		xPositions[blocks[i]] = recresultx[i];
@@ -1149,12 +1132,12 @@ vector<vector<float> > Objects::setRecursiveMatrix(int size, int size2, vector<f
 		}
 	}
 
-	for(int i=0; i<Qnew.size(); i++){
-		for(int j=0; j<Qnew.size(); j++){
-			cout << Qnew[i][j] << endl;
-		}
-		cout << endl;
-	}
+	// for(int i=0; i<Qnew.size(); i++){
+	// 	for(int j=0; j<Qnew.size(); j++){
+	// 		cout << Qnew[i][j] << endl;
+	// 	}
+	// 	cout << endl;
+	// }
 
 	return Qnew;
 }
@@ -1253,11 +1236,11 @@ vector<float> Objects::setRecursiveBX(vector<vector<int> > &recursiveNetFile, ve
 	}
 
 	
-	cout << "BX: " << endl;
-	for(int i=0; i<recursiveBX.size(); i++){
-		cout << recursiveBX[i] << " ";
-	}
-	cout << endl << endl;
+	// cout << "BX: " << endl;
+	// for(int i=0; i<recursiveBX.size(); i++){
+	// 	cout << recursiveBX[i] << " ";
+	// }
+	// cout << endl << endl;
 
 	return recursiveBX;
 }
@@ -1303,11 +1286,11 @@ vector<float> Objects::setRecursiveBY(vector<vector<int> > &recursiveNetFile, ve
 	return recursiveBY;
 
 
-	cout << "BY: " << endl;
-	for(int i=0; i<recursiveBY.size(); i++){
-		cout << recursiveBY[i] << " ";
-	}
-	cout << endl;
+	// cout << "BY: " << endl;
+	// for(int i=0; i<recursiveBY.size(); i++){
+	// 	cout << recursiveBY[i] << " ";
+	// }
+	// cout << endl;
 }
 
 

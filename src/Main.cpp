@@ -13,10 +13,16 @@
 //#include "drawscreen.h"
 using namespace std;
 
+Objects net;
+
 void delay (void);
 void drawscreen (void);
+void drawscreen2 (void);
+void drawscreenspread (void);
+void drawscreensnap (void);
 void doSomething(void (*drawscreen_ptr) (void));
-void act_on_new_button_func (void (*drawscreen_ptr) (void));
+void showNets(void (*drawscreen_ptr) (void));
+void Iteration (void (*drawscreen_ptr) (void));
 // void functionToCall(class Objects net);
 void act_on_button_press (float x, float y);
 void act_on_mouse_move (float x, float y);
@@ -24,9 +30,15 @@ void act_on_key_press (char c);
 
 vector<float> xPos;
 vector<float> yPos;
+vector<float> xPos2;
+vector<float> yPos2;
+vector<float> xPossnap;
+vector<float> yPossnap;
 vector<vector<int> > netSet;
 vector<vector<int> > Edges;
 float Num;
+float hpwlinitial, hpwlspread, hpwlsnap;
+
 
 // For example showing entering lines and rubber banding
 bool rubber_band_on = false;
@@ -34,6 +46,11 @@ bool have_entered_line, have_rubber_line;
 bool line_entering_demo = false;
 float x1, y3, x2, y4;  
 int num_new_button_clicks = 0;
+bool showingNets = true;
+int iteration = 1;
+bool initial = true;
+bool spread = false;
+bool snap = false;
 
 class Utils {
 private:
@@ -112,33 +129,34 @@ public:
 };
 
 int main(int argc, char * argv[]) {
-	Objects net;
+	
 
 	Utils * ut = new Utils(net);
 	ut->get_configuration(argv[1]);
 
 	net.runStep1();
-	net.runStep2();
-	net.snap1();
 	xPos = net.getxPositions();
 	yPos = net.getyPositions();
+	hpwlinitial = net.HPWL();
+	cout << "Initial HPWL: " << hpwlinitial << endl;
+
+	
+
+	net.snap1();
+	xPossnap = net.getxPositions();
+	yPossnap = net.getyPositions();
+	hpwlsnap = net.HPWL();
+	cout << "Snap HPWL: " << hpwlsnap << endl;
+	
 	Num = net.returnN();
-	netSet = net.getNetSet();
-	// Edges = net.createEdges();
+
+	Edges = net.createEdges();
 	printf ("About to start graphics.\n");
 	init_graphics("Placer Graphics", WHITE);
 
-	/* still picture drawing allows user to zoom, etc. */
-	// Set-up coordinates from (xl,ytop) = (0,0) to 
-	// (xr,ybot) = (1000,1000)
 	init_world (0.,0.,5000.,5000.);
 	update_message("Interactive graphics example.");
 
-	// Pass control to the window handling routine.  It will watch for user input
-	// and redraw the screen / pan / zoom / etc. the graphics in response to user
-	// input or windows being moved around the screen.  This is done by calling the
-	// four callbacks below.  mouse movement and key press (keyboard) events aren't 
-	// enabled by default, so they aren't on yet.
 	event_loop(act_on_button_press, NULL, NULL, drawscreen);   
 
 	/* animation section */
@@ -158,8 +176,9 @@ int main(int argc, char * argv[]) {
 
 	init_world (-Num*10.,-Num*10.,Num*100.+Num*10.,Num*100.+Num*10.);
 	update_message("Interactive graphics #2. Click in graphics area to rubber band line.");
-	create_button ("Window", "Iteration", act_on_new_button_func);
-	create_button ("Iteration", "Snap", doSomething);
+	create_button ("Window", "Spread: 1", Iteration);
+	create_button ("Spread: 1", "Snap", doSomething);
+	create_button ("Snap", "Nets: On", showNets);
 
 	// Enable mouse movement (not just button presses) and key board input.
 	// The appropriate callbacks will be called by event_loop.
@@ -172,11 +191,6 @@ int main(int argc, char * argv[]) {
 	drawscreen(); 
 	event_loop(act_on_button_press, act_on_mouse_move, act_on_key_press, drawscreen);
 
-	
-
-	//drawGrid(net.getxPositions(), net.getyPositions(), net.returnN());
-	// Step2:
-	// net.runStep2();
 
 	close_graphics ();
 
@@ -206,11 +220,11 @@ void drawscreen (void) {
 	  drawline (i*div, 0, i*div, bound);
 	  drawline (0, i*div, bound, i*div);
 	}
-	
-	// setcolor(LIGHTGREY);
-	// for(int i=0; i<Edges.size(); i++){
-	// 	drawline(xPos[Edges[i][0]],xPos[Edges[i][1]],yPos[Edges[i][0]],yPos[Edges[i][1]]);
-	// }
+	setlinewidth (2);
+	setcolor(DARKGREY);
+	for(int i=0; i<Edges.size(); i++){
+		drawline(xPos[Edges[i][0]-1]*100,yPos[Edges[i][0]-1]*100,xPos[Edges[i][1]-1]*100,yPos[Edges[i][1]-1]*100);
+	}
 
 
 	const char * message;
@@ -228,6 +242,212 @@ void drawscreen (void) {
 	}
 }
 
+void drawscreen2 (void) {
+
+/* redrawing routine for still pictures.  Graphics package calls  *
+ * this routine to do redrawing after the user changes the window *
+ * in any way.                                                    */
+	set_draw_mode (DRAW_NORMAL);  // Should set this if your program does any XOR drawing in callbacks.
+	clearscreen();  /* Should precede drawing for all drawscreens */
+
+
+	float bound = Num*100.;
+	float div = bound/Num;
+	float center = div/2;
+
+	setfontsize (3);
+	setlinestyle (SOLID);
+	setlinewidth (3);
+	setcolor (BLACK);
+	drawrect (0,0,bound,bound);
+	setlinewidth (1);
+	for(int i=0; i<Num; i++){
+	  drawline (i*div, 0, i*div, bound);
+	  drawline (0, i*div, bound, i*div);
+	}
+	
+	const char * message;
+	for(int i=0;i<xPos.size();i++){
+		
+		setcolor(RED);
+		fillarc (xPos[i]*100,yPos[i]*100,30.,0.,360.);
+		setcolor(BLACK);
+		stringstream strs;
+		strs << i+1;
+		string temp_str = strs.str();
+		char const* pchar = temp_str.c_str();
+		drawtext (xPos[i]*100,yPos[i]*100, pchar, 150.);
+	
+	}
+}
+
+void drawscreenspread (void) {
+
+/* redrawing routine for still pictures.  Graphics package calls  *
+ * this routine to do redrawing after the user changes the window *
+ * in any way.                                                    */
+	set_draw_mode (DRAW_NORMAL);  // Should set this if your program does any XOR drawing in callbacks.
+	clearscreen();  /* Should precede drawing for all drawscreens */
+
+
+	float bound = Num*100.;
+	float div = bound/Num;
+	float center = div/2;
+
+	setfontsize (3);
+	setlinestyle (SOLID);
+	setlinewidth (3);
+	setcolor (BLACK);
+	drawrect (0,0,bound,bound);
+	setlinewidth (1);
+	for(int i=0; i<Num; i++){
+	  drawline (i*div, 0, i*div, bound);
+	  drawline (0, i*div, bound, i*div);
+	}
+	setlinewidth (2);
+	setcolor(DARKGREY);
+	for(int i=0; i<Edges.size(); i++){
+		drawline(xPos2[Edges[i][0]-1]*100,yPos2[Edges[i][0]-1]*100,xPos2[Edges[i][1]-1]*100,yPos2[Edges[i][1]-1]*100);
+	}
+
+
+	const char * message;
+	for(int i=0;i<xPos.size();i++){
+		
+		setcolor(RED);
+		fillarc (xPos2[i]*100,yPos2[i]*100,30.,0.,360.);
+		setcolor(BLACK);
+		stringstream strs;
+		strs << i+1;
+		string temp_str = strs.str();
+		char const* pchar = temp_str.c_str();
+		drawtext (xPos2[i]*100,yPos2[i]*100, pchar, 150.);
+	
+	}
+}
+
+void drawscreenspread2 (void) {
+
+/* redrawing routine for still pictures.  Graphics package calls  *
+ * this routine to do redrawing after the user changes the window *
+ * in any way.                                                    */
+	set_draw_mode (DRAW_NORMAL);  // Should set this if your program does any XOR drawing in callbacks.
+	clearscreen();  /* Should precede drawing for all drawscreens */
+
+
+	float bound = Num*100.;
+	float div = bound/Num;
+	float center = div/2;
+
+	setfontsize (3);
+	setlinestyle (SOLID);
+	setlinewidth (3);
+	setcolor (BLACK);
+	drawrect (0,0,bound,bound);
+	setlinewidth (1);
+	for(int i=0; i<Num; i++){
+	  drawline (i*div, 0, i*div, bound);
+	  drawline (0, i*div, bound, i*div);
+	}
+	
+	const char * message;
+	for(int i=0;i<xPos.size();i++){
+		
+		setcolor(RED);
+		fillarc (xPos2[i]*100,yPos2[i]*100,30.,0.,360.);
+		setcolor(BLACK);
+		stringstream strs;
+		strs << i+1;
+		string temp_str = strs.str();
+		char const* pchar = temp_str.c_str();
+		drawtext (xPos2[i]*100,yPos2[i]*100, pchar, 150.);
+	
+	}
+}
+
+void drawscreensnap (void) {
+
+/* redrawing routine for still pictures.  Graphics package calls  *
+ * this routine to do redrawing after the user changes the window *
+ * in any way.                                                    */
+	set_draw_mode (DRAW_NORMAL);  // Should set this if your program does any XOR drawing in callbacks.
+	clearscreen();  /* Should precede drawing for all drawscreens */
+
+
+	float bound = Num*100.;
+	float div = bound/Num;
+	float center = div/2;
+
+	setfontsize (3);
+	setlinestyle (SOLID);
+	setlinewidth (3);
+	setcolor (BLACK);
+	drawrect (0,0,bound,bound);
+	setlinewidth (1);
+	for(int i=0; i<Num; i++){
+	  drawline (i*div, 0, i*div, bound);
+	  drawline (0, i*div, bound, i*div);
+	}
+	setlinewidth (2);
+	setcolor(DARKGREY);
+	for(int i=0; i<Edges.size(); i++){
+		drawline(xPossnap[Edges[i][0]-1]*100,yPossnap[Edges[i][0]-1]*100,xPossnap[Edges[i][1]-1]*100,yPossnap[Edges[i][1]-1]*100);
+	}
+
+
+	const char * message;
+	for(int i=0;i<xPos.size();i++){
+		
+		setcolor(RED);
+		fillarc (xPossnap[i]*100,yPossnap[i]*100,30.,0.,360.);
+		setcolor(BLACK);
+		stringstream strs;
+		strs << i+1;
+		string temp_str = strs.str();
+		char const* pchar = temp_str.c_str();
+		drawtext (xPossnap[i]*100,yPossnap[i]*100, pchar, 150.);
+	
+	}
+}
+void drawscreensnap2 (void) {
+
+/* redrawing routine for still pictures.  Graphics package calls  *
+ * this routine to do redrawing after the user changes the window *
+ * in any way.                                                    */
+	set_draw_mode (DRAW_NORMAL);  // Should set this if your program does any XOR drawing in callbacks.
+	clearscreen();  /* Should precede drawing for all drawscreens */
+
+
+	float bound = Num*100.;
+	float div = bound/Num;
+	float center = div/2;
+
+	setfontsize (3);
+	setlinestyle (SOLID);
+	setlinewidth (3);
+	setcolor (BLACK);
+	drawrect (0,0,bound,bound);
+	setlinewidth (1);
+	for(int i=0; i<Num; i++){
+	  drawline (i*div, 0, i*div, bound);
+	  drawline (0, i*div, bound, i*div);
+	}
+
+
+	const char * message;
+	for(int i=0;i<xPos.size();i++){
+		
+		setcolor(RED);
+		fillarc (xPossnap[i]*100,yPossnap[i]*100,30.,0.,360.);
+		setcolor(BLACK);
+		stringstream strs;
+		strs << i+1;
+		string temp_str = strs.str();
+		char const* pchar = temp_str.c_str();
+		drawtext (xPossnap[i]*100,yPossnap[i]*100, pchar, 150.);
+	
+	}
+}
 
 void delay (void) {
 
@@ -242,9 +462,57 @@ void delay (void) {
             sum = sum + i+j-k; 
 }
 
+void Iteration (void (*drawscreen_ptr) (void)) {
+	if(initial){
+		initial = false;
+		spread = true;
+	}
 
-void act_on_new_button_func (void (*drawscreen_ptr) (void)) {
-	delay();
+	if(Num/(4*iteration) > 1){
+		net.runStep2(iteration);
+		xPos2 = net.getxPositions();
+		yPos2 = net.getyPositions();
+		hpwlspread = net.HPWL();
+		cout << "Spread HPWL: " << hpwlspread << endl;
+
+		char old_button_name[200], new_button_name[200];
+		
+		sprintf (old_button_name, "Spread: %d", iteration);
+		iteration++;
+		sprintf (new_button_name, "Spread: %d", iteration);
+		change_button_text (old_button_name, new_button_name);
+		drawscreenspread();
+	}
+
+	
+}
+
+void showNets (void (*drawscreen_ptr) (void)) {
+	char old_button_name[200], new_button_name[200];
+	if(showingNets){
+		sprintf (old_button_name, "Nets: On");
+		sprintf (new_button_name, "Nets: Off");
+		change_button_text (old_button_name, new_button_name);
+		showingNets = false;
+		if(initial)
+			drawscreen2();
+		else if(spread)
+			drawscreenspread2();
+		else if(snap)
+			drawscreensnap2();
+	}
+	else{
+		sprintf (old_button_name, "Nets: Off");
+		sprintf (new_button_name, "Nets: On");
+		change_button_text (old_button_name, new_button_name);
+		showingNets = true;
+		if(initial)
+			drawscreen();
+		else if(spread)
+			drawscreenspread();
+		else if(snap)
+			drawscreensnap();
+	}	
 }
 
 // void functionToCall(class Objects net){
@@ -252,7 +520,15 @@ void act_on_new_button_func (void (*drawscreen_ptr) (void)) {
 // }
 
 void doSomething (void (*drawscreen_ptr) (void)) {
-	cout << "Damn" << endl;
+	if(spread){
+		spread = false;
+		snap = true;
+	}
+	else if(initial){
+		initial = false;
+		snap = true;
+	}
+	drawscreensnap();
 }
 
 void act_on_button_press (float x, float y) {
@@ -283,7 +559,6 @@ void act_on_button_press (float x, float y) {
    }
 
 }
-
 
 
 void act_on_mouse_move (float x, float y) {
