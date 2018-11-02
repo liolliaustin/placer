@@ -141,13 +141,6 @@ int main(int argc, char * argv[]) {
 	cout << "Initial HPWL: " << hpwlinitial << endl;
 
 	
-
-	net.snap1();
-	xPossnap = net.getxPositions();
-	yPossnap = net.getyPositions();
-	hpwlsnap = net.HPWL();
-	cout << "Snap HPWL: " << hpwlsnap << endl;
-	
 	Num = net.returnN();
 
 	Edges = net.createEdges();
@@ -468,20 +461,40 @@ void Iteration (void (*drawscreen_ptr) (void)) {
 		spread = true;
 	}
 
-	if(Num/(4*iteration) > 1){
-		net.runStep2(iteration);
-		xPos2 = net.getxPositions();
-		yPos2 = net.getyPositions();
-		hpwlspread = net.HPWL();
-		cout << "Spread HPWL: " << hpwlspread << endl;
+	if(Num > 20){
+		if(iteration < 4){
+			net.runStep2(iteration);
+			xPos2 = net.getxPositions();
+			yPos2 = net.getyPositions();
+			hpwlspread = net.HPWL();
+			cout << "Spread HPWL: " << hpwlspread << endl;
 
-		char old_button_name[200], new_button_name[200];
-		
-		sprintf (old_button_name, "Spread: %d", iteration);
-		iteration++;
-		sprintf (new_button_name, "Spread: %d", iteration);
-		change_button_text (old_button_name, new_button_name);
-		drawscreenspread();
+			char old_button_name[200], new_button_name[200];
+			
+			sprintf (old_button_name, "Spread: %d", iteration);
+			iteration++;
+			sprintf (new_button_name, "Spread: %d", iteration);
+			change_button_text (old_button_name, new_button_name);
+			drawscreenspread();
+		}
+	}
+
+	else{
+		if(Num/(4*iteration) > 1){
+			net.runStep2(iteration);
+			xPos2 = net.getxPositions();
+			yPos2 = net.getyPositions();
+			hpwlspread = net.HPWL();
+			cout << "Spread HPWL: " << hpwlspread << endl;
+
+			char old_button_name[200], new_button_name[200];
+			
+			sprintf (old_button_name, "Spread: %d", iteration);
+			iteration++;
+			sprintf (new_button_name, "Spread: %d", iteration);
+			change_button_text (old_button_name, new_button_name);
+			drawscreenspread();
+		}
 	}
 
 	
@@ -528,6 +541,12 @@ void doSomething (void (*drawscreen_ptr) (void)) {
 		initial = false;
 		snap = true;
 	}
+
+	net.snap1();
+	xPossnap = net.getxPositions();
+	yPossnap = net.getyPositions();
+	hpwlsnap = net.HPWL();
+	cout << "Snap HPWL: " << hpwlsnap << endl;
 	drawscreensnap();
 }
 
@@ -565,7 +584,7 @@ void act_on_mouse_move (float x, float y) {
 	// function to handle mouse move event, the current mouse position in the current world coordinate
 	// as defined as MAX_X and MAX_Y in init_world is returned
 
-   printf ("Mouse move at (%f,%f)\n", x, y);
+   //printf ("Mouse move at (%f,%f)\n", x, y);
    if (rubber_band_on) {
       // Go into XOR mode.  Make sure we set the linestyle etc. for xor mode, since it is 
       // stored in different state than normal mode.

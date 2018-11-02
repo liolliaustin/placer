@@ -145,8 +145,9 @@ void Objects::runStep2(int iteration){
 
 //fix for fixed blocks
 void Objects::snap1(){
-
+	int count = 0;
 	vector<vector<int> > gridspace(N,vector<int>(N,0));
+	
 	float xValue, yValue;
 	float val2snap=0, differenceMin=0, differenceCurrent;
 
@@ -159,6 +160,7 @@ void Objects::snap1(){
 			if(gridspace[i][j] == 0){	
 				xValue = i+0.5;
 				yValue = j+0.5;
+				count++;
 
 				for(int k=fixed.size(); k<xPositions.size(); k++){
 					differenceCurrent = (yPositions[k]-yValue)/(xPositions[k]-xValue);
@@ -183,6 +185,7 @@ void Objects::snap1(){
 				}
 
 				gridspace[i][j] = val2snap;
+				
 				xPositions[val2snap-1] *= -1;
 				yPositions[val2snap-1] *= -1;
 				val2snap = 0;
@@ -196,14 +199,22 @@ void Objects::snap1(){
 		xPositions[i] *= -1;
 		yPositions[i] *= -1;
 	}
+
+
 	for(int i=0; i<gridspace.size(); i++){
-		for(int j=0; j<gridspace.size(); j++){
+		for(int j=0; j<gridspace[i].size(); j++){
+			//cout << gridspace[i][j] << " ";
 			if(gridspace[i][j] > fixed.size()){
 				xPositions[gridspace[i][j]-1] = i+0.5;
 				yPositions[gridspace[i][j]-1] = j+0.5;
 			}
 		}
+		//cout << endl;
 	}
+
+	//cout << fixed.size() << " " << xPositions.size() << " " << count;
+	this -> xPositions = xPositions;
+	this -> yPositions = yPositions;
 }
 
 void Objects::snap2(){
@@ -1057,6 +1068,15 @@ void Objects::recursiveNetlist(vector<int> &blocks, float centerx, float centery
 		yPositions[blocks[i]] = recresulty[i];
 	}
 
+	for(int i=0; i<xPositions.size(); i++){
+		if(xPositions[i] <0){
+			xPositions[i] *= (-1);
+		}
+		if(yPositions[i]<0){
+			yPositions[i] *= (-1);
+		}
+	}
+
 	this -> xPositions = xPositions;
 	this -> yPositions = yPositions;
 
@@ -1110,7 +1130,7 @@ vector<float> Objects::getrecursiveEdges(vector<int> &blocks, vector<float> &new
 
 		}
 		if(i>netsBtwnBlocks.size()){
-			newWeights[i] *= 40;
+			newWeights[i] *= 20;
 		}
 	}
 
