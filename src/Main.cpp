@@ -10,7 +10,6 @@
 #include <deque>
 #include "Classes.h"
 #include "graphics.h"
-//#include "drawscreen.h"
 using namespace std;
 
 Objects net;
@@ -23,7 +22,6 @@ void drawscreensnap (void);
 void doSomething(void (*drawscreen_ptr) (void));
 void showNets(void (*drawscreen_ptr) (void));
 void Iteration (void (*drawscreen_ptr) (void));
-// void functionToCall(class Objects net);
 void act_on_button_press (float x, float y);
 void act_on_mouse_move (float x, float y);
 void act_on_key_press (char c);
@@ -40,7 +38,6 @@ float Num;
 float hpwlinitial, hpwlspread, hpwlsnap;
 
 
-// For example showing entering lines and rubber banding
 bool rubber_band_on = false;
 bool have_entered_line, have_rubber_line;
 bool line_entering_demo = false;
@@ -527,10 +524,6 @@ void showNets (void (*drawscreen_ptr) (void)) {
 			drawscreensnap();
 	}	
 }
-
-// void functionToCall(class Objects net){
-// 	net.runStep2();
-// }
 
 void doSomething (void (*drawscreen_ptr) (void)) {
 	if(spread){

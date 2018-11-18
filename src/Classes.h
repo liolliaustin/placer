@@ -1130,7 +1130,7 @@ vector<float> Objects::getrecursiveEdges(vector<int> &blocks, vector<float> &new
 
 		}
 		if(i>netsBtwnBlocks.size()){
-			newWeights[i] *= 20;
+			newWeights[i] *= 10;
 		}
 	}
 
